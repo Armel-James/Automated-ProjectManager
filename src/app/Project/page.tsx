@@ -17,7 +17,7 @@ import {
 } from "../../services/firestore/projects";
 import MembersManagement from "./Members/page";
 import ProjectSettings from "./Settings/page";
-import Reports from "../Reports/Reports";
+import Reports from "./Reports/page";
 import NotifDropdown from "../../components/notif-dropdown";
 
 function ProjectView() {

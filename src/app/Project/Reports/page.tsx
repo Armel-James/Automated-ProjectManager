@@ -1,14 +1,14 @@
 // import React from "react";
 
 import { doc, DocumentReference, getDoc } from "firebase/firestore";
-import { getProjectById } from "../../services/firestore/projects";
+import { getProjectById } from "../../../services/firestore/projects";
 import {
   getCriticalPath,
   getCriticalTasks,
   getProjectEnd,
   getProjectStart,
   listenToTasks,
-} from "../../services/firestore/tasks";
+} from "../../../services/firestore/tasks";
 import {
   BarChart,
   Bar,
@@ -19,9 +19,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import React, { useEffect, useState } from "react";
-import type { Task } from "../../types/task";
-import type { Project } from "../../types/project";
-import { capitalizeWords } from "../../util/string-processing";
+import type { Task } from "../../../types/task";
+import type { Project } from "../../../types/project";
+import { capitalizeWords } from "../../../util/string-processing";
 // import { CriticalPath } from "@syncfusion/ej2-gantt/src/gantt/actions/critical-path";
 
 // import handleGetCriticalTasks from "../Project/Tasks/page";
@@ -60,6 +60,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [tasks, setTask] = useState<Task[]>([]);
   const [taskWithoutMilestones, setTaskWithoutMilestones] = useState<Task[]>([]);
   const [project, setProject] = useState<Project | null>(null);
+  const [overallProgress, setOverallProgress] = useState<number>(0);
 
   // useEffect(() => {
 
@@ -106,6 +107,18 @@ export default function Reports({ projectId }: ReportsManagementProps) {
 
     return () => unsubProjectEnd();
   }, [projectId]);
+
+  useEffect(() => {
+
+    if (taskWithoutMilestones.length === 0) return;
+
+    let average = 0;
+    taskWithoutMilestones.forEach(element => {
+      average += element.progress;
+    });
+
+    setOverallProgress(average / taskWithoutMilestones.length);
+  }, [taskWithoutMilestones]);
 
   // export default function Reports() {
   //  const criticalPath = new CriticalPath();
@@ -185,7 +198,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
               Overall Progress
             </span>
             <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-              {((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100).toFixed(2)}
+              {overallProgress.toFixed(2)}
               <span className="text-base text-gray-500 ml-1">%</span>
             </span>
               <ProgressBar value={Number(((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100).toFixed(2))} />
