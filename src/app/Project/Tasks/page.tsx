@@ -282,7 +282,7 @@ function TasksView({ projectId }: TasksViewProps) {
                     }
                 createTask(projectId, 
                   { ...childrenOfParent[newTaskIndex], order: newTaskIndex, name: "New Task", progress: 0});
-                  console.log({ ...childrenOfParent[newTaskIndex], order: newTaskIndex, name: "New Task", progress: 0});
+                  console.log({ ...childrenOfParent[newTaskIndex], order: newTaskIndex, name: "New Task", progress: 0, notes: ""});
               });
 
 

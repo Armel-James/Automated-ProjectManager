@@ -22,6 +22,7 @@ import React, { useEffect, useState } from "react";
 import type { Task } from "../../../types/task";
 import type { Project } from "../../../types/project";
 import { capitalizeWords } from "../../../util/string-processing";
+import { addDays } from "../../../util/date";
 // import { CriticalPath } from "@syncfusion/ej2-gantt/src/gantt/actions/critical-path";
 
 // import handleGetCriticalTasks from "../Project/Tasks/page";
@@ -61,6 +62,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [taskWithoutMilestones, setTaskWithoutMilestones] = useState<Task[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [overallProgress, setOverallProgress] = useState<number>(0);
+  const [overdueRate, setOverDueRate] = useState<number>(0);
 
   // useEffect(() => {
 
@@ -112,12 +114,26 @@ export default function Reports({ projectId }: ReportsManagementProps) {
 
     if (taskWithoutMilestones.length === 0) return;
 
-    let average = 0;
+    const totalTasksNumber = taskWithoutMilestones.length;
+
+    let progressAverage = 0;
     taskWithoutMilestones.forEach(element => {
-      average += element.progress;
+      progressAverage += element.progress;
     });
 
-    setOverallProgress(average / taskWithoutMilestones.length);
+    setOverallProgress(progressAverage / totalTasksNumber);
+
+    const dateNow = new Date();
+    const overdueTasks = taskWithoutMilestones.filter((task) => {
+      if (task.startDate instanceof Date) {
+      const taskEndDate = addDays(task.startDate, task.duration);
+
+      return taskEndDate < dateNow && task.progress < 100;
+      }
+    });
+
+    setOverDueRate((overdueTasks.length / totalTasksNumber) * 100);
+    
   }, [taskWithoutMilestones]);
 
   // export default function Reports() {
@@ -186,6 +202,11 @@ export default function Reports({ projectId }: ReportsManagementProps) {
               ((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100).toFixed(2)
             }%</div>
           </div>
+          <div>
+            <span className="text-sm text-gray-500">Overdue Rate</span>
+            <div className="font-bold text-red-600 text-lg">{overdueRate.toFixed(2)}%</div>
+          </div>
+          <div></div>
         </div>
       </div>
 
