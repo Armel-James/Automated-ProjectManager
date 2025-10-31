@@ -151,10 +151,10 @@ export default function TeamTasks() {
                     <span className="font-medium">
                       {projectOwner?.displayName}
                     </span>
-                    <span className="text-xs text-gray-400">
-                      • Project Owner
-                    </span>
                   </div>
+                  <span className="text-xs text-gray-400 mt-1">
+                    Project Owner
+                  </span>
                 </div>
               </div>
             </div>

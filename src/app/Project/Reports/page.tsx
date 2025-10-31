@@ -64,26 +64,33 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [overallProgress, setOverallProgress] = useState<number>(0);
   const [overdueRate, setOverDueRate] = useState<number>(0);
 
-  // useEffect(() => {
-
-  // }, [tasks]);
-
   useEffect(() => {
     // Subscribe to Firestore updates
     const unsubscribe = getCriticalPath(projectId, (tasks) => {
       setCriticalTasks(tasks);
       console.log("Live critical tasks:", tasks);
     });
+    const unsubProjectEnd = getProjectEnd(projectId, (startDate) => {
+      setProjectEnd(startDate);
+      // console.log("Live project start date:", startDate);
+    });
 
     getProjectById(projectId).then((proj) => {
       setProject(proj);
+    });
+
+    const unsubProjectStart = getProjectStart(projectId, (startDate) => {
+      setProjectStart(startDate);
+      // console.log("Live project start date:", startDate);
     });
 
     const unsubscribeTasks = listenToTasks(projectId, setTask)
     // Cleanup listener on unmount
     return () => {
       unsubscribe(); 
-      unsubscribeTasks()
+      unsubscribeTasks();
+      unsubProjectEnd();
+      unsubProjectStart();
     };
   }, [projectId]);
 
@@ -91,24 +98,6 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     const filteredTasks = tasks.filter((task) => task.duration != 0);
     setTaskWithoutMilestones(filteredTasks);
   }, [tasks]);
-
-  useEffect(() => {
-    const unsubProjectStart = getProjectStart(projectId, (startDate) => {
-      setProjectStart(startDate);
-      // console.log("Live project start date:", startDate);
-    });
-
-    return () => unsubProjectStart();
-  }, [projectId]);
-
-  useEffect(() => {
-    const unsubProjectEnd = getProjectEnd(projectId, (startDate) => {
-      setProjectEnd(startDate);
-      // console.log("Live project start date:", startDate);
-    });
-
-    return () => unsubProjectEnd();
-  }, [projectId]);
 
   useEffect(() => {
 
@@ -306,5 +295,3 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     </div>
   );
 }
-
-// export default Reports;

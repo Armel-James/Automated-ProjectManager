@@ -108,7 +108,7 @@ export default function MyTeamTasks({ tasks, projectId }: MyTeamTasksProps) {
               <th className="px-6 py-4 text-left font-semibold rounded-tl-2xl">
                 Task
               </th>
-              <th className="px-6 py-4 text-left font-semibold">Assignee</th>
+              <th className="px-6 py-4 text-left font-semibold">ID</th>
               <th className="px-6 py-4 text-left font-semibold">Start Date</th>
               <th className="px-6 py-4 text-left font-semibold">Due Date</th>
               <th className="px-6 py-4 text-left font-semibold">Duration</th>
