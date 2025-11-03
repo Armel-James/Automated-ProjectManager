@@ -21,7 +21,6 @@ export async function addNotification(
   projectId: string,
   notification: Omit<Notification, "id" | "createdAt" | "readBy">
 ) {
-  return;``
   const docRef = await addDoc(notificationsCollection(projectId), {
     ...notification,
     createdAt: new Date(),
@@ -48,7 +47,7 @@ export function listenToNotifications(
         if (notification.isMemberSpecific) {
           return notification.targetMembers?.includes(userEmail);
         } else {
-          alert("This is still on development.");
+          console.log("This is still on development.");
           return false;
         }
       });

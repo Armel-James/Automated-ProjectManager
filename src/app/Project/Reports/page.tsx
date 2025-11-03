@@ -1,14 +1,14 @@
 // import React from "react";
 
 import { doc, DocumentReference, getDoc } from "firebase/firestore";
-import { getProjectById } from "../../services/firestore/projects";
+import { getProjectById } from "../../../services/firestore/projects";
 import {
   getCriticalPath,
   getCriticalTasks,
   getProjectEnd,
   getProjectStart,
   listenToTasks,
-} from "../../services/firestore/tasks";
+} from "../../../services/firestore/tasks";
 import {
   BarChart,
   Bar,
@@ -19,25 +19,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import React, { useEffect, useState } from "react";
-import type { Task } from "../../types/task";
-import type { Project } from "../../types/project";
-import { capitalizeWords } from "../../util/string-processing";
+import type { Task } from "../../../types/task";
+import type { Project } from "../../../types/project";
+import { capitalizeWords } from "../../../util/string-processing";
+import { addDays } from "../../../util/date";
 // import { CriticalPath } from "@syncfusion/ej2-gantt/src/gantt/actions/critical-path";
-
-// import handleGetCriticalTasks from "../Project/Tasks/page";
-// import Task from "../../components/task";
-// import { getProjectById } from "../../services/firestore/projects";
-// import TasksView  from "../Project/Tasks/page";
-// import type { Gantt } from "@syncfusion/ej2-react-gantt";
-// import GanttChart from "../../components/gantt-chart";
-
-// interface Task {
-//   id: string;
-//   name: string;
-//   startDate: string;
-//   endDate: string;
-//   isCritical: boolean;
-// }
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -60,10 +46,11 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [tasks, setTask] = useState<Task[]>([]);
   const [taskWithoutMilestones, setTaskWithoutMilestones] = useState<Task[]>([]);
   const [project, setProject] = useState<Project | null>(null);
-
-  // useEffect(() => {
-
-  // }, [tasks]);
+  const [overallProgress, setOverallProgress] = useState<number>(0);
+  const [overdueRate, setOverDueRate] = useState<number>(0);
+  const [tasksCompleted, setTasksCompleted] = useState<number>(0);
+  const [chartData, setChartData] = useState<{ name: string; tasks: number }[]>([]);
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   useEffect(() => {
     // Subscribe to Firestore updates
@@ -71,55 +58,97 @@ export default function Reports({ projectId }: ReportsManagementProps) {
       setCriticalTasks(tasks);
       console.log("Live critical tasks:", tasks);
     });
+    const unsubProjectEnd = getProjectEnd(projectId, (startDate) => {
+      setProjectEnd(startDate);
+      // console.log("Live project start date:", startDate);
+    });
 
     getProjectById(projectId).then((proj) => {
       setProject(proj);
+    });
+
+    const unsubProjectStart = getProjectStart(projectId, (startDate) => {
+      setProjectStart(startDate);
+      // console.log("Live project start date:", startDate);
     });
 
     const unsubscribeTasks = listenToTasks(projectId, setTask)
     // Cleanup listener on unmount
     return () => {
       unsubscribe(); 
-      unsubscribeTasks()
+      unsubscribeTasks();
+      unsubProjectEnd();
+      unsubProjectStart();
     };
   }, [projectId]);
 
   useEffect(() => {
     const filteredTasks = tasks.filter((task) => task.duration != 0);
     setTaskWithoutMilestones(filteredTasks);
+    setCurrentTime(new Date());
   }, [tasks]);
 
   useEffect(() => {
-    const unsubProjectStart = getProjectStart(projectId, (startDate) => {
-      setProjectStart(startDate);
-      // console.log("Live project start date:", startDate);
+
+    if (taskWithoutMilestones.length === 0) return;
+
+    const totalTasksNumber = taskWithoutMilestones.length;
+
+    let progressAverage = 0;
+    taskWithoutMilestones.forEach(element => {
+      progressAverage += element.progress;
     });
 
-    return () => unsubProjectStart();
-  }, [projectId]);
+    setOverallProgress(progressAverage / totalTasksNumber);
+
+    const dateNow = new Date();
+    const overdueTasks = taskWithoutMilestones.filter((task) => {
+      if (task.startDate instanceof Date) {
+      const taskEndDate = addDays(task.startDate, task.duration);
+
+      return taskEndDate < dateNow && task.progress < 100;
+      }
+    });
+
+    setOverDueRate((overdueTasks.length / totalTasksNumber) * 100);
+    setTasksCompleted((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100); 
+
+    
+  }, [taskWithoutMilestones]);
 
   useEffect(() => {
-    const unsubProjectEnd = getProjectEnd(projectId, (startDate) => {
-      setProjectEnd(startDate);
-      // console.log("Live project start date:", startDate);
-    });
+    if (tasks.length === 0 || !get_ProjectStart) return;
 
-    return () => unsubProjectEnd();
-  }, [projectId]);
+    // Group tasks by week starting from project start date
+    const projectStartDate = new Date(get_ProjectStart);
+    const tasksByWeek = tasks.reduce<Record<number, number>>((acc, task) => {
+      if (task.progress === 100 && task.startDate instanceof Date) {
+        const week = getWeekFromProjectStart(task.startDate, projectStartDate); // Helper function to get week number from project start
+        acc[week] = (acc[week] || 0) + 1;
+      }
+      return acc;
+    }, {});
 
-  // export default function Reports() {
-  //  const criticalPath = new CriticalPath();
-  //  const criticalTasks = criticalPath.getCriticalTasks();
+    // Convert to chart data format
+    const chartData = Object.keys(tasksByWeek).map((week) => ({
+      name: `Week ${week}`,
+      tasks: tasksByWeek[Number(week)],
+    }));
+    
 
-  //  console.log("Critical Tasks:", TasksView);
-  // console.log(Task.toString());
+    setChartData(chartData); // Update state for the chart
+  }, [tasks, get_ProjectStart]);
 
-  const kpis = [
-    { title: "Overall Progress", value: 82, unit: "%" },
-    { title: "Completed Tasks", value: 46, unit: "of 56" },
-    { title: "Active Tasks", value: 7, unit: "in progress" },
-    { title: "Critical Path Length", value: getCriticalTasks, unit: "days" },
-  ];
+  // Helper function to calculate week number from project start
+  function getWeekFromProjectStart(taskDate, projectStartDate) {
+    const diffInMs = taskDate - projectStartDate;
+    const diffInDays = Math.floor(diffInMs / (24 * 60 * 60 * 1000));
+    return Math.ceil((diffInDays + 1) / 7);
+  }
+
+  function handleExport() {
+
+  }
 
   const milestoneData = [
     { name: "Planning", date: "Sep 25, 2025", progress: 100 },
@@ -129,21 +158,19 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     { name: "Deployment", date: "Nov 20, 2025", progress: 0 },
   ];
 
-  const chartData = [
-    { name: "Week 1", tasks: 8 },
-    { name: "Week 2", tasks: 10 },
-    { name: "Week 3", tasks: 13 },
-    { name: "Week 4", tasks: 9 },
-    { name: "Week 5", tasks: 6 },
-  ];
-
   return (
     <div className="w-full px-8 py-6 space-y-8 bg-white rounded-2xl shadow-lg border border-gray-100">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#0f6cbd] mb-1 tracking-tight">
-          Project Reports
-        </h2>
-        <p className="text-gray-500 mb-4">Detailed report for your project:</p>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-gray-800">Project Reports</h1>
+          <button
+            className="px-4 py-2 bg-[#0f6cbd] text-white rounded shadow hover:bg-[#0d5ca1] focus:outline-none focus:ring-2 focus:ring-[#0f6cbd]/50"
+            onClick={() => handleExport()}
+          >
+            Export to PDF
+          </button>
+        </div>
+        <p className="text-gray-500 mb-4">Detailed report for your project as of {currentTime.toLocaleString()}:</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-gradient-to-r from-[#e6f0fa] via-white to-[#f7fafd] rounded-xl p-4 border border-[#b3d1f7]">
           <div>
             <span className="text-sm text-gray-500">Project Name</span>
@@ -170,11 +197,18 @@ export default function Reports({ projectId }: ReportsManagementProps) {
           <div>
             <span className="text-sm text-gray-500">Tasks Completed</span>
             <div className="font-bold text-blue-600 text-lg">{
-              ((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100).toFixed(2)
+              (tasksCompleted.toFixed(2))
             }%</div>
           </div>
+          <div>
+            <span className="text-sm text-gray-500">Overdue Rate</span>
+            <div className="font-bold text-red-600 text-lg">{overdueRate.toFixed(2)}%</div>
+          </div>
+          <div></div>
         </div>
       </div>
+
+      
 
       {/* KPI Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -185,10 +219,10 @@ export default function Reports({ projectId }: ReportsManagementProps) {
               Overall Progress
             </span>
             <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-              {((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100).toFixed(2)}
+              {overallProgress.toFixed(2)}
               <span className="text-base text-gray-500 ml-1">%</span>
             </span>
-              <ProgressBar value={Number(((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100).toFixed(2))} />
+              <ProgressBar value={Number(overallProgress.toFixed(2))} />
         </div>
 
 
@@ -248,7 +282,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
       </div>
 
       {/* Milestone Summary */}
-      <div className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-6">
+      {/* <div className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-6">
         <h3 className="text-lg font-bold text-[#0f6cbd] mb-4">
           Project Milestones Summary
         </h3>
@@ -268,9 +302,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
-
-// export default Reports;

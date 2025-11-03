@@ -5,7 +5,7 @@ import { Test } from "./test";
 import Tasks from "./Project/Tasks/page";
 import MyTasks from "./MemberViews/My-Tasks/page";
 import TeamTasks from "./MemberViews/Teams-Tasks/page";
-import Reports from "./Reports/Reports";
+import Reports from "./Project/Reports/page";
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
