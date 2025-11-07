@@ -9,6 +9,7 @@ interface ModalChildren {
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   onConfirm: () => void;
   isViewOnly?: boolean;
+  isDelete?: boolean;
 }
 
 export default function Modal({
@@ -18,7 +19,8 @@ export default function Modal({
   setIsOpen,
   onClose,
   onConfirm,
-  isViewOnly,
+  isViewOnly = false,
+  isDelete = false,
 }: ModalChildren) {
   if (!open) return null;
 
@@ -69,14 +71,25 @@ export default function Modal({
               >
                 Cancel
               </button>
-              <button
-                onClick={() => {
-                  onConfirm();
-                }}
-                className="bg-[#0f6cbd] hover:bg-[#155a8a] text-white font-semibold py-2 px-6 rounded-lg shadow transition border border-[#0f6cbd]"
-              >
-                Confirm
-              </button>
+              {isViewOnly === false && isDelete ? (
+                <button
+                  onClick={() => {
+                    onConfirm();
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all border border-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50"
+                >
+                  Delete
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    onConfirm();
+                  }}
+                  className="bg-[#0f6cbd] hover:bg-[#155a8a] text-white font-semibold py-2 px-6 rounded-lg shadow transition border border-[#0f6cbd]"
+                >
+                  Confirm
+                </button>
+              )}
             </div>
           )}
         </div>

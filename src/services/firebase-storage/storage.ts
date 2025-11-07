@@ -1,9 +1,14 @@
 // src/services/storageService.js
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import { storage } from "../firebase/config";
 import type { FileUpload } from "../../types/fileupload";
 import type { User } from "firebase/auth";
-import { addUploadRecord } from "../firestore/files";
+import { addUploadRecord, deleteUploadRecord } from "../firestore/files";
 
 /**
  * Uploads a file to Firebase Storage with optional progress tracking.
@@ -54,4 +59,17 @@ export function uploadFile(
       }
     );
   });
+}
+
+export async function deleteFile(
+  file: FileUpload,
+  projectId: string,
+  taskId: string
+): Promise<void> {
+  const fileRef = ref(
+    storage,
+    `projects/${projectId}/tasks/${taskId}/uploads/${file.fileName}`
+  );
+  await deleteObject(fileRef);
+  if (file.id) deleteUploadRecord(file.id, projectId, taskId);
 }

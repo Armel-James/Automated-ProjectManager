@@ -1,6 +1,12 @@
 import type { FileUpload } from "../../types/fileupload";
 import { db } from "../firebase/config";
-import { addDoc, onSnapshot, collection } from "firebase/firestore";
+import {
+  addDoc,
+  onSnapshot,
+  collection,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
 
 export async function addUploadRecord(
   upload: FileUpload,
@@ -16,6 +22,23 @@ export async function addUploadRecord(
     );
   } catch (error) {
     console.error("Error adding upload record:", error);
+  }
+}
+
+export async function deleteUploadRecord(
+  uploadId: string,
+  projectId: string,
+  taskId: string
+) {
+  try {
+    const docRef = doc(
+      db,
+      `projects/${projectId}/tasks/${taskId}/uploads`,
+      uploadId
+    );
+    return await deleteDoc(docRef);
+  } catch (error) {
+    console.error("Error deleting upload record:", error);
   }
 }
 
