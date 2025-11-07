@@ -31,7 +31,7 @@ export default function UserTasks({ tasks, projectId }: UserTasksProps) {
         </ul>
       </div>
       {/* Filter Options */}
-      <aside className="min-w-[220px] max-w-xs bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col gap-4 h-fit self-start">
+      {/* <aside className="min-w-[220px] max-w-xs bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col gap-4 h-fit self-start">
         <div className="text-lg font-semibold text-[#0f6cbd] mb-2">Filters</div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-gray-700">Status</label>
@@ -52,7 +52,7 @@ export default function UserTasks({ tasks, projectId }: UserTasksProps) {
         <button className="mt-2 bg-[#0f6cbd] text-white px-4 py-2 rounded text-sm font-semibold hover:bg-[#095a9d] transition">
           Apply Filters
         </button>
-      </aside>
+      </aside> */}
     </div>
   );
 }

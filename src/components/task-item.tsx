@@ -8,6 +8,7 @@ import {
 } from "../services/firestore/comments";
 import { addDays } from "../util/date";
 import TaskCommentsModal from "./task-comment-modal";
+import UploadModal from "./UploadModal/upload-modal";
 
 interface TaskItemProps {
   task: Task;
@@ -21,6 +22,7 @@ export default function TaskItem({ task, projectId }: TaskItemProps) {
   const [thisTask, setThisTask] = useState<Task>(task);
   const [modalCommentInput, setModalCommentInput] = useState("");
   const [lastComment, setLastComment] = useState<Comment | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     setThisTask(task);
@@ -121,56 +123,37 @@ export default function TaskItem({ task, projectId }: TaskItemProps) {
         </div>
       </div>
       {/* Show Comments Button */}
-      <div className="mb-2 flex justify-end">
-        <button
-          className="bg-[#e6f0fa] border border-[#b3d1f7] px-3 py-1 rounded text-[#0f6cbd] text-xs hover:bg-[#d0e3fa] transition"
-          onClick={() => setShowCommentsModal(true)}
-        >
-          Show Comments
-        </button>
-        {/* Comments Modal */}
-        <TaskCommentsModal
-          showCommentsModal={showCommentsModal}
-          user={user}
-          setShowCommentsModal={setShowCommentsModal}
-          taskId={thisTask.docId}
-          projectId={projectId || ""}
-        />
-      </div>
-      {/* Upload Feature */}
-      <div className="mt-3 flex items-center gap-2">
-        {/* <label
-          htmlFor={`upload-${task.id}`}
-          className="bg-[#e6f0fa] border border-[#b3d1f7] px-3 py-1 rounded cursor-pointer text-[#0f6cbd] text-sm hover:bg-[#d0e3fa] transition"
-        >
-          Upload file
-        </label>
-        <input
-          type="file"
-          id={`upload-${task.id}`}
-          className="hidden"
-          onChange={(e) => handleUpload(task.id, e.target.files?.[0] || null)}
-        /> */}
-        {/*uploads[task.id] && (
-          <>
-            <span className="text-xs text-gray-700 ml-2">
-              Uploaded: {uploads[task.id]?.name}
-            </span>
-            <button
-              className="ml-2 px-2 py-1 rounded bg-[#0f6cbd] text-white text-xs hover:bg-[#095a9d] transition"
-              onClick={() => {
-                const file = uploads[task.id];
-                if (file) {
-                  const url = URL.createObjectURL(file);
-                  window.open(url, "_blank");
-                  setTimeout(() => URL.revokeObjectURL(url), 10000);
-                }
-              }}
-            >
-              Show Uploaded File
-            </button>
-          </>
-        )*/}
+      <div className="flex flex-row w-full gap-4 items-center">
+        <div className="flex justify-end">
+          <button
+            className="bg-[#0f6cbd] text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#0d5ca8] transition"
+            onClick={() => setShowCommentsModal(true)}
+          >
+            View Comments
+          </button>
+          <TaskCommentsModal
+            showCommentsModal={showCommentsModal}
+            user={user}
+            setShowCommentsModal={setShowCommentsModal}
+            taskId={thisTask.docId}
+            projectId={projectId || ""}
+          />
+        </div>
+        <div className="flex items-center">
+          <button
+            className="bg-[#e6f0fa] text-[#0f6cbd] border border-[#b3d1f7] px-4 py-2 rounded text-sm font-medium hover:bg-[#d0e3fa] transition"
+            onClick={() => setShowUploadModal(true)}
+          >
+            Upload Files
+          </button>
+          {showUploadModal && (
+            <UploadModal
+              taskId={task.docId}
+              onClose={() => setShowUploadModal(false)}
+              projectId={projectId || ""}
+            />
+          )}
+        </div>
       </div>
     </li>
   );

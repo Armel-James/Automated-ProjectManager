@@ -13,6 +13,7 @@
     "deploy": "gh-pages -d build"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.926.0",
     "@headlessui/react": "^2.2.9",
     "@syncfusion/ej2-base": "^31.1.17",
     "@syncfusion/ej2-react-base": "^31.1.17",
@@ -24,6 +25,7 @@
     "jspdf": "^3.0.3",
     "react": "^18.1.1",
     "react-dom": "^18.1.1",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.9.1",
     "recharts": "^3.2.1",
     "tailwindcss": "^4.1.11"

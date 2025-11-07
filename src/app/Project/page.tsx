@@ -98,7 +98,6 @@ function ProjectView() {
           </div>
           {/* Right-side Icons */}
           <div className="flex items-center justify-end gap-3 pr-4">
-            
             {project && <NotifDropdown projectId={project.id} />}
             <NavDropdown
               actions={{
