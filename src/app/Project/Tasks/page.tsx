@@ -71,7 +71,6 @@ function TasksView({ projectId }: TasksViewProps) {
     }
 
     if (selectedRow == null) {
-      alert("Please select one task only.");
       return;
     }
 

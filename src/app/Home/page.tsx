@@ -35,7 +35,7 @@ export default function Home() {
               className="w-9 h-9 p-2 rounded-xl bg-[#e6f0fa]"
             />
             <div className="text-xl font-bold text-[#155a8a] tracking-tight select-none">
-              AutoProject
+              Slope
             </div>
           </div>
           {/* App Name */}
