@@ -129,7 +129,7 @@ export async function updateMember(
   projectId: string,
   memberId: string,
   data: Partial<Member>,
-  oldEmailAddress?: string
+  oldEmailAddress: string
 ) {
   try {
     if (!oldEmailAddress) {
@@ -232,23 +232,25 @@ export function onGanttMembersSnapshot(
 ) {
   const membersCol = collection(db, "projects", projectId, "members");
   return onSnapshot(membersCol, (snapshot: QuerySnapshot<DocumentData>) => {
-    const members = snapshot.docs.map((doc) => {
-      const memberData = { ...doc.data(), id: doc.id } as Member;
-      
-      if (memberData.level === "Leader") {
-        return null;
-      }
+    const members = snapshot.docs
+      .map((doc) => {
+        const memberData = { ...doc.data(), id: doc.id } as Member;
 
-      const ganttFormattedMember: GanttMember = {
-        id: memberData.id,
-        name: memberData.name,
-        unit: memberData.unit || 100,
-        role: memberData.role,
-        teamName: memberData.teamName,
-      };
+        if (memberData.level === "Leader") {
+          return null;
+        }
 
-      return ganttFormattedMember;
-    }).filter(Boolean) as GanttMember[];
+        const ganttFormattedMember: GanttMember = {
+          id: memberData.id,
+          name: memberData.name,
+          unit: memberData.unit || 100,
+          role: memberData.role,
+          teamName: memberData.teamName,
+        };
+
+        return ganttFormattedMember;
+      })
+      .filter(Boolean) as GanttMember[];
     callback(members);
     if (loadedCallback) loadedCallback(true);
   });

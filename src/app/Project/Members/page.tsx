@@ -186,13 +186,24 @@ export default function MembersManagement({
 
   function handleSaveTeam(teamId: string) {
     if (!editTeamName.trim()) return;
+
+    const currentTeamName = teams.find((t) => t.id === teamId)?.name;
+
+    for (const member of members) {
+      if (member.teamName === currentTeamName) {
+        console.log("Updating member:", member.id);
+        updateMember(projectId, member.id, { teamName: editTeamName });
+      }
+    }
+
     updateTeam(projectId, teamId, { name: editTeamName }).then(() => {
       setTeams((prev) =>
         prev.map((t) => (t.id === teamId ? { ...t, name: editTeamName } : t))
       );
-      setEditTeamId(null);
-      setEditTeamName("");
     });
+
+    setEditTeamId(null);
+    setEditTeamName("");
   }
 
   function handleCancelEditTeam() {
@@ -631,13 +642,13 @@ export default function MembersManagement({
                     {team.name}
                   </span>
                   <div className="flex gap-2">
-                    <button
+                    {/* <button
                       className="bg-[#e6f0fa] text-[#0f6cbd] px-2 py-1 rounded-lg text-xs font-semibold hover:bg-[#b3d1f7] shadow"
                       title="Edit"
                       onClick={() => handleEditTeam(team)}
                     >
                       ✎
-                    </button>
+                    </button> */}
                     <button
                       className="bg-[#ffeaea] text-[#d43f3a] px-2 py-1 rounded-lg text-xs font-semibold hover:bg-[#ffd6d6] shadow"
                       onClick={() => handleDeleteTeam(team)}
