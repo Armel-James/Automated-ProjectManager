@@ -71,7 +71,6 @@ function TasksView({ projectId }: TasksViewProps) {
     }
 
     if (selectedRow == null) {
-      alert("Please select one task only.");
       return;
     }
 
@@ -202,7 +201,7 @@ function TasksView({ projectId }: TasksViewProps) {
           taskType="FixedDuration"
           height="800px"
           editDialogFields={editDialogFields}
-          width="1820px"
+          width="100%"
           gridLines={"Horizontal"}
           allowSelection={true}
           editSettings={editOptions}
@@ -301,7 +300,6 @@ function TasksView({ projectId }: TasksViewProps) {
                 if (newTaskIndex < 0) return;
 
                 console.log(newTaskIndex);
-                // Continue here...
 
                 childrenOfParent[newTaskIndex].docId = String(taskIndex);
                 for (
