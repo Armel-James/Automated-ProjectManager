@@ -109,7 +109,7 @@ export function getCriticalPath(
     console.log("tasks: ", tasks + " gct: ", getCriticalTasks);
   });
 }
-export var getCriticalTasks = 0;
+export let getCriticalTasks = 0;
 
 export function getProjectStart(
   projectId: string,
@@ -166,12 +166,12 @@ export function listenToTaskByTeam(
           id: doc.id,
           docId: doc.id,
           ...docData,
-          startDate: new Date(docData.startDate?.toDate?.()) || new Date(),
+          startDate: new Date(docData.startDate?.toDate?.()),
         } as Task;
       })
       .filter((task) => {
         return task.assignedMembers?.some((member) => {
-          const memberNow: any = member;
+          const memberNow = member;
           return memberNow.teamName === teamName;
         });
       });

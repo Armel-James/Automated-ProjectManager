@@ -170,7 +170,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
             Export to PDF
           </button>
         </div>
-        <p className="text-gray-500 mb-4">Detailed report for your project as of {currentTime.toLocaleString()}:</p>
+        <p className="text-gray-500 mb-4">Detailed report for your project as of {currentTime.toLocaleString()}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-gradient-to-r from-[#e6f0fa] via-white to-[#f7fafd] rounded-xl p-4 border border-[#b3d1f7]">
           <div>
             <span className="text-sm text-gray-500">Project Name</span>
@@ -257,7 +257,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
               Critical Path Length
             </span>
             <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-              {getCriticalTasks}
+            {(Number(get_ProjectEnd) - Number(get_ProjectStart)) / 86400000 }
               <span className="text-base text-gray-500 ml-1">days</span>
             </span>
         </div>
