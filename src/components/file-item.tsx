@@ -34,7 +34,11 @@ export default function FileItem({
 
   return (
     <>
-      <li className="flex items-center justify-between bg-white border border-gray-300 px-4 py-3 rounded-lg shadow-md hover:shadow-lg transition">
+      <li
+        className={`flex items-center justify-between bg-white border px-4 py-3 rounded-lg shadow-md hover:shadow-lg transition ${
+          file.isSelected ? "bg-blue-50 border-blue-500" : "border-gray-300"
+        }`}
+      >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-blue-100 flex items-center justify-center rounded-lg">
             <FaFileAlt className="text-blue-600 text-xl" />
@@ -59,13 +63,20 @@ export default function FileItem({
           </div>
         </div>
         {currentUser && currentUser.uid === file.uploadedBy.uid && (
-          <button
-            className="flex items-center gap-2 text-red-500 text-sm font-medium hover:underline hover:text-red-700 transition"
-            onClick={() => setIsDeleteModalOpen(true)}
-          >
-            <FaTrashAlt className="text-red-500 text-base" />
-            Delete
-          </button>
+          <div className="flex items-center gap-4">
+            <img
+              src={currentUser.photoURL || "/default-avatar.png"}
+              alt="User Avatar"
+              className="w-10 h-10 rounded-full border border-gray-300"
+            />
+            <button
+              className="flex items-center gap-2 text-red-500 text-sm font-medium hover:underline hover:text-red-700 transition"
+              onClick={() => setIsDeleteModalOpen(true)}
+            >
+              <FaTrashAlt className="text-red-500 text-base" />
+              Delete
+            </button>
+          </div>
         )}
       </li>
 

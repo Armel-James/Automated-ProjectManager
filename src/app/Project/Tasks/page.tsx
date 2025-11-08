@@ -64,7 +64,7 @@ function TasksView({ projectId }: TasksViewProps) {
     allowTaskbarEditing: true,
   };
 
-  function handleSubmissionsClick() {
+  function handleToolbarClick(args: any) {
     if (!ganttRef.current) {
       console.error("Gantt reference is null");
       return;
@@ -75,7 +75,7 @@ function TasksView({ projectId }: TasksViewProps) {
       return;
     }
 
-    setIsUploadModalOpen(true);
+    if (args.item.id === "SubmissionsButton") setIsUploadModalOpen(true);
   }
 
   const rowSelected = (args: any) => {
@@ -208,7 +208,7 @@ function TasksView({ projectId }: TasksViewProps) {
           editSettings={editOptions}
           toolbar={toolbarOptions}
           enableCriticalPath={true}
-          toolbarClick={handleSubmissionsClick}
+          toolbarClick={handleToolbarClick}
           selectionSettings={{
             mode: "Row",
             type: "Multiple",
