@@ -60,7 +60,7 @@ export default function MyTeamTasks({ tasks, projectId }: MyTeamTasksProps) {
       </div>
       {/* Filters and Search */}
       {/* Sort Buttons */}
-      <div className="flex flex-wrap gap-2 mb-6 items-center">
+      {/* <div className="flex flex-wrap gap-2 mb-6 items-center">
         <span className="text-sm font-semibold text-gray-700">
           Sort by Due Date:
         </span>
@@ -99,7 +99,7 @@ export default function MyTeamTasks({ tasks, projectId }: MyTeamTasksProps) {
           placeholder="Search tasks..."
           className="border border-[#b3d1f7] rounded px-3 py-2 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#0f6cbd]/30 flex-1 min-w-[200px]"
         />
-      </div>
+      </div> */}
       {/* Card Layout for Tasks */}
       <div className="overflow-x-auto rounded-2xl shadow-xl border border-[#e6f0fa] bg-white">
         <table className="min-w-full text-sm">

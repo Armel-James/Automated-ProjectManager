@@ -11,12 +11,14 @@ interface UploadModalProps {
   projectId: string;
   taskId: string;
   onClose: () => void;
+  canAddFiles: boolean;
 }
 
 export default function UploadModal({
   projectId,
   taskId,
   onClose,
+  canAddFiles = true,
 }: UploadModalProps) {
   const [uploads, setUploads] = useState<FileUpload[] | null>(null);
   const currentUser = getAuth().currentUser;
@@ -40,38 +42,15 @@ export default function UploadModal({
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && currentUser) {
-      // const newUploads: FileUpload[] = Array.from(files).map((file) => ({
-      //   taskId,
-      //   fileName: file.name,
-      //   downloadURL: "#", // Placeholder URL
-      //   uploadedBy: {
-      //     uid: "current-user",
-      //     email: "current@example.com",
-      //     displayName: "Current User",
-      //   },
-      //   uploadedAt: new Date(),
-      // }));
-
       Array.from(files).forEach((file) => {
-        // Here you would call your upload function, e.g.:
-        // uploadFile(currentUser, file, projectId, taskId, (progress) => {
-        //   console.log(`Upload progress for ${file.name}: ${progress}%`);
-        // });
         uploadFile(currentUser, file, projectId, taskId).then((url) => {
           console.log(`File uploaded successfully: ${url}`);
         });
       });
-
-      //setUploads((prev) => [...prev, ...newUploads]);
     }
   };
 
-  const handleDeleteUpload = (index: number) => {
-    //setUploads((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const handleConfirm = () => {
-    // Logic to save uploads can be added here
     onClose();
   };
 
@@ -87,19 +66,23 @@ export default function UploadModal({
       <div className="flex flex-col gap-4 w-[700px] h-[500px]">
         <div className="flex justify-between items-center border-b border-gray-200 pb-2">
           <h2 className="text-lg font-semibold text-[#0f6cbd]">Task Files</h2>
-          <label
-            htmlFor="file-upload"
-            className="bg-[#0f6cbd] text-white px-4 py-2 rounded-lg cursor-pointer text-sm font-medium hover:bg-[#0d5ca8] transition shadow-md"
-          >
-            + Add Files
-          </label>
-          <input
-            id="file-upload"
-            type="file"
-            multiple
-            className="hidden"
-            onChange={handleFileUpload}
-          />
+          {canAddFiles && (
+            <div>
+              <label
+                htmlFor="file-upload"
+                className="bg-[#0f6cbd] text-white px-4 py-2 rounded-lg cursor-pointer text-sm font-medium hover:bg-[#0d5ca8] transition shadow-md"
+              >
+                + Add Files
+              </label>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </div>
+          )}
         </div>
 
         {!uploads || uploads.length === 0 ? (

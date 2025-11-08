@@ -39,6 +39,8 @@ import {
   onProjectMembersSnapshot,
 } from "../../../services/firestore/members";
 import sampleTasks from "./sampleData";
+import UploadModal from "../../../components/UploadModal/upload-modal";
+import task from "../../../components/task";
 
 interface TasksViewProps {
   projectId?: string;
@@ -47,9 +49,10 @@ interface TasksViewProps {
 function TasksView({ projectId }: TasksViewProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const ganttRef = useRef<GanttComponent>(null);
+  const [selectedRow, setSelectedRow] = useState<any>(null);
   const currentTaskToEdit = useRef<any>(null);
   const [members, setMembers] = useState<GanttMember[]>([]);
-  const [filteredMembers, setFilteredMembers] = useState<GanttMember[]>([]);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [projectMembers, setProjectMembers] = useState<Member[]>([]);
   const [tasksLoaded, setTasksLoaded] = useState(false);
   const [membersLoaded, setMembersLoaded] = useState(false);
@@ -59,6 +62,36 @@ function TasksView({ projectId }: TasksViewProps) {
     allowDeleting: true,
     mode: "Dialog",
     allowTaskbarEditing: true,
+  };
+
+  function handleSubmissionsClick() {
+    if (!ganttRef.current) {
+      console.error("Gantt reference is null");
+      return;
+    }
+
+    if (selectedRow == null) {
+      alert("Please select one task only.");
+      return;
+    }
+
+    setIsUploadModalOpen(true);
+  }
+
+  const rowSelected = (args: any) => {
+    if (ganttRef.current) {
+      ganttRef.current.enableItems(["SubmissionsButton"], true); // Enable the button
+    }
+
+    //setSelectedRow(args.data);
+    if (args.data.length > 1) setSelectedRow(null);
+    else setSelectedRow(args.data);
+  };
+
+  const rowDeselected = () => {
+    if (ganttRef.current) {
+      ganttRef.current.enableItems(["SubmissionsButton"], false); // Disable the button
+    }
   };
 
   useEffect(() => {
@@ -84,7 +117,6 @@ function TasksView({ projectId }: TasksViewProps) {
       unsubscribeProjectMembers();
     };
   }, [projectId]);
-
 
   const taskFields: any = {
     id: "id",
@@ -113,6 +145,7 @@ function TasksView({ projectId }: TasksViewProps) {
     "Search",
     "Indent",
     "Outdent",
+    { text: "Submissions", id: "SubmissionsButton" },
   ];
 
   const editDialogFields: EditDialogFieldSettingsModel[] = [
@@ -147,6 +180,8 @@ function TasksView({ projectId }: TasksViewProps) {
           enablePersistence={true}
           resources={members}
           resourceFields={resourceFields}
+          rowSelected={rowSelected}
+          rowDeselected={rowDeselected}
           workWeek={[
             "Sunday",
             "Monday",
@@ -173,12 +208,11 @@ function TasksView({ projectId }: TasksViewProps) {
           editSettings={editOptions}
           toolbar={toolbarOptions}
           enableCriticalPath={true}
-          selectionSettings={
-            {
-              mode: "Row",
-              type: "Multiple"
-            }
-          }
+          toolbarClick={handleSubmissionsClick}
+          selectionSettings={{
+            mode: "Row",
+            type: "Multiple",
+          }}
           allowRowDragAndDrop={true}
           enableContextMenu={true}
           taskbarEditing={(args) => {
@@ -194,7 +228,6 @@ function TasksView({ projectId }: TasksViewProps) {
             //console.log("old data: ", currentTaskToEdit.current);
           }}
           actionBegin={(args) => {
-
             if (args.requestType === "beforeOpenEditDialog") {
               currentTaskToEdit.current = {
                 ...args.rowData,
@@ -228,11 +261,10 @@ function TasksView({ projectId }: TasksViewProps) {
           }}
           actionComplete={(args) => {
             if (args.requestType === "add") {
-
               // Get parent id of new Task
               const parentId = args.data.taskData.parentId;
               const newTaskId = args.data.taskData.id;
-              
+
               getTaskIndex(projectId).then((taskIndex: number) => {
                 const newTask: Task = {
                   ...args.data.taskData,
@@ -272,20 +304,32 @@ function TasksView({ projectId }: TasksViewProps) {
                 // Continue here...
 
                 childrenOfParent[newTaskIndex].docId = String(taskIndex);
-                for (let i = newTaskIndex + 1; i < childrenOfParent.length; i++) {
-                      childrenOfParent[i].order = i;
-                      updateTaskOrder(
-                        projectId,
-                        String(childrenOfParent[i].docId),
-                        i
-                      );
-                    }
-                createTask(projectId, 
-                  { ...childrenOfParent[newTaskIndex], order: newTaskIndex, name: "New Task", progress: 0});
-                  console.log({ ...childrenOfParent[newTaskIndex], order: newTaskIndex, name: "New Task", progress: 0, notes: ""});
+                for (
+                  let i = newTaskIndex + 1;
+                  i < childrenOfParent.length;
+                  i++
+                ) {
+                  childrenOfParent[i].order = i;
+                  updateTaskOrder(
+                    projectId,
+                    String(childrenOfParent[i].docId),
+                    i
+                  );
+                }
+                createTask(projectId, {
+                  ...childrenOfParent[newTaskIndex],
+                  order: newTaskIndex,
+                  name: "New Task",
+                  progress: 0,
+                });
+                console.log({
+                  ...childrenOfParent[newTaskIndex],
+                  order: newTaskIndex,
+                  name: "New Task",
+                  progress: 0,
+                  notes: "",
+                });
               });
-
-
             } else if (args.requestType === "save") {
               if (!currentTaskToEdit?.current) {
                 return;
@@ -403,6 +447,14 @@ function TasksView({ projectId }: TasksViewProps) {
             ]}
           />
         </GanttComponent>
+      )}
+      {selectedRow && isUploadModalOpen && (
+        <UploadModal
+          onClose={() => setIsUploadModalOpen(false)}
+          taskId={selectedRow.taskData.docId}
+          projectId={projectId || ""}
+          canAddFiles={false}
+        />
       )}
     </div>
   );
