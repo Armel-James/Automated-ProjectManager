@@ -3,6 +3,7 @@
 import { doc, DocumentReference, getDoc } from "firebase/firestore";
 import { getProjectById } from "../../../services/firestore/projects";
 import {
+  getActiveTasks,
   getCriticalPath,
   getCriticalTasks,
   getProjectEnd,
@@ -51,6 +52,19 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [tasksCompleted, setTasksCompleted] = useState<number>(0);
   const [chartData, setChartData] = useState<{ name: string; tasks: number }[]>([]);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [get_ActiveTasks, setActiveTasks] = useState(0);
+
+      
+  useEffect(() => {
+    const unsubGetActiveTasks = getActiveTasks(projectId, (tasks) => {
+      setActiveTasks(tasks);
+      console.log("active tasks:", tasks);
+      
+    });
+    return () => {
+      unsubGetActiveTasks();
+    };
+  }, [projectId]);
 
   useEffect(() => {
     // Subscribe to Firestore updates
@@ -245,7 +259,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
               Active Tasks
             </span>
             <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-              {taskWithoutMilestones.filter((task) => task.progress !== 100).length}
+              {/* {taskWithoutMilestones.filter((task) => task.progress !== 100).length} */get_ActiveTasks}
               <span className="text-base text-gray-500 ml-1">of {taskWithoutMilestones.length}</span>
             </span>
         </div>

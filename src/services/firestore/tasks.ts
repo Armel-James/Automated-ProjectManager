@@ -111,6 +111,36 @@ export function getCriticalPath(
 }
 export let getCriticalTasks = 0;
 
+export function getActiveTasks(
+  projectId: string,
+  callback: (tasks: number) => void
+) {
+  const todayDate = new Date().toDateString();
+
+  const tasksRef = collection(db, "projects", projectId, "tasks");
+  let a = 0;
+  return onSnapshot(tasksRef, (snapshot) => {
+    snapshot.forEach((doc) => {
+      const endDate = new Date(doc.data().startDate.toDate().toDateString());
+      endDate.setDate(
+        endDate.getDate() +
+          (doc.data().duration != 0 ? doc.data().duration - 1 : 0)
+      );
+      const endDateStr = endDate.toDateString();
+      if (
+        !snapshot.empty &&
+        todayDate >= endDate.toDateString() &&
+        todayDate <= endDateStr
+      ) {
+        a++;
+      } else {
+        callback(0);
+      }
+    });
+    callback(a);
+  });
+}
+
 export function getProjectStart(
   projectId: string,
   callback: (startDate: Date) => void
@@ -342,12 +372,14 @@ export async function updateTaskProgress(
     progress: newProgress,
   });
 
-  const task =  await getTaskById(projectId, taskId);
+  const task = await getTaskById(projectId, taskId);
   if (!task) return;
 
-  notifyProjectOwner(projectId, `The progress of task ID "${task.name}" has been updated to ${newProgress}%.`, NotificationType.TaskUpdated);
-
-
+  notifyProjectOwner(
+    projectId,
+    `The progress of task ID "${task.name}" has been updated to ${newProgress}%.`,
+    NotificationType.TaskUpdated
+  );
 }
 
 export async function updateTaskDependency(
@@ -431,6 +463,7 @@ export async function updateCriticalTasks(projectId: string, duration: number) {
   });
 }
 
-export async function getTaskAssignedMembersEmails(projectId: string, taskId: string) {
-
-}
+export async function getTaskAssignedMembersEmails(
+  projectId: string,
+  taskId: string
+) {}
