@@ -25,6 +25,8 @@ import type { Project } from "../../../types/project";
 import { capitalizeWords } from "../../../util/string-processing";
 import { addDays } from "../../../util/date";
 // import { CriticalPath } from "@syncfusion/ej2-gantt/src/gantt/actions/critical-path";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas-pro";
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -57,6 +59,8 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   );
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [get_ActiveTasks, setActiveTasks] = useState(0);
+
+  const reportRef = useRef<HTMLDivElement>(null);
 
 
   useEffect(() => {
@@ -160,8 +164,44 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   }
 
   function handleExport() {
+    const input = reportRef.current;
+    if (!input) return;
 
+    // Hide the export button before capturing
+    const exportButton = input.querySelector("#export-btn") as HTMLElement;
+    if (exportButton) exportButton.style.display = "none";
+
+    html2canvas(input, {
+      scale: 2, // improves quality
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    }).then((canvas) => {
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Restore export button after capture
+      if (exportButton) exportButton.style.display = "block";
+
+      pdf.save(`${project?.name || "project-report"}.pdf`);
+    });
   }
+
 
   const milestoneData = [
     { name: "Planning", date: "Sep 25, 2025", progress: 100 },
@@ -172,11 +212,11 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   ];
 
   return (
-    <div className="w-full px-8 py-6 space-y-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+    <div ref={reportRef}  className="w-full px-8 py-6 space-y-8 bg-white rounded-2xl shadow-lg border border-gray-100">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-800">Project Reports</h1>
-          <button
+          <button id="export-btn"
             className="px-4 py-2 bg-[#0f6cbd] text-white rounded shadow hover:bg-[#0d5ca1] focus:outline-none focus:ring-2 focus:ring-[#0f6cbd]/50"
             onClick={() => handleExport()}
           >
