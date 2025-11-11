@@ -95,13 +95,13 @@ export default function TeamTasks() {
           {/* App Name & TitleInput */}
           <div className="flex items-center gap-6 pl-4">
             <span className="text-lg font-bold text-[#0f6cbd] tracking-tight drop-shadow-sm select-none">
-              AutoProject
+              Slope
             </span>
           </div>
           {/* Right-side Icons */}
           <div className="flex items-center justify-end gap-3 pr-4">
-            {projectId && (<NotifDropdown projectId={projectId} />)}
-            
+            {projectId && <NotifDropdown projectId={projectId} />}
+
             <NavDropdown
               actions={{
                 Logout: () => {

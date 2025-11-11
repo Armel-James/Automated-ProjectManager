@@ -65,7 +65,7 @@ export default function MyTasks() {
           {/* App Name & TitleInput */}
           <div className="flex items-center gap-6 pl-4">
             <span className="text-lg font-bold text-[#0f6cbd] tracking-tight drop-shadow-sm select-none">
-              AutoProject
+              Slope
             </span>
           </div>
           {/* Right-side Icons */}
