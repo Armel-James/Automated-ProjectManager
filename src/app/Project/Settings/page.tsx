@@ -24,7 +24,7 @@ export default function ProjectSettings({ projectId }: ProjectSettingsProps) {
         >
           <span className="ml-2">Project</span>
         </button>
-        <button
+        {/* <button
           className={`relative px-8 py-3 text-left rounded-none transition-all font-medium text-gray-700 hover:bg-[#e6f0fa] hover:text-[#0f6cbd] flex items-center group
             ${
               tab === "collaborators"
@@ -34,14 +34,14 @@ export default function ProjectSettings({ projectId }: ProjectSettingsProps) {
           onClick={() => setTab("collaborators")}
         >
           <span className="ml-2">Collaborator</span>
-        </button>
+        </button> */}
       </div>
       {/* Main content */}
       <div className="flex-1 p-10 bg-white">
         {tab === "project" && <ProjectSpecificSettings projectId={projectId} />}
-        {tab === "collaborators" && (
+        {/* {tab === "collaborators" && (
           <CollaborationSettings projectId={projectId} />
-        )}
+        )} */}
       </div>
     </div>
   );
