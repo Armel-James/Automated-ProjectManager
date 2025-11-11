@@ -106,7 +106,6 @@ export function getCriticalPath(
     const tasks = snapshot.data()?.critical || 0;
     getCriticalTasks = tasks;
     callback(tasks);
-    console.log("tasks: ", tasks + " gct: ", getCriticalTasks);
   });
 }
 export let getCriticalTasks = 0;
@@ -136,6 +135,15 @@ export function getActiveTasks(
       } else {
         callback(0);
       }
+      console.log(
+        doc.data().id,
+        doc.data().name,
+        endDate.toDateString(),
+        endDateStr,
+        todayDate >= endDate.toDateString() && todayDate <= endDateStr,
+        a
+      );
+      
     });
     callback(a);
   });
@@ -220,7 +228,6 @@ export function listenToTasksByAssignedMember(
     const tasks = snapshot.docs
       .map((doc) => {
         const docData = doc.data();
-        //console.log("Assigned Members:", docData.assignedMembers);
         return {
           id: doc.id,
           docId: doc.id,

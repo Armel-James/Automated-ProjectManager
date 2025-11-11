@@ -19,7 +19,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import type { Task } from "../../../types/task";
 import type { Project } from "../../../types/project";
 import { capitalizeWords } from "../../../util/string-processing";
@@ -45,21 +45,23 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [get_ProjectStart, setProjectStart] = useState<Date>();
   const [get_ProjectEnd, setProjectEnd] = useState<Date>();
   const [tasks, setTask] = useState<Task[]>([]);
-  const [taskWithoutMilestones, setTaskWithoutMilestones] = useState<Task[]>([]);
+  const [taskWithoutMilestones, setTaskWithoutMilestones] = useState<Task[]>(
+    []
+  );
   const [project, setProject] = useState<Project | null>(null);
   const [overallProgress, setOverallProgress] = useState<number>(0);
   const [overdueRate, setOverDueRate] = useState<number>(0);
   const [tasksCompleted, setTasksCompleted] = useState<number>(0);
-  const [chartData, setChartData] = useState<{ name: string; tasks: number }[]>([]);
+  const [chartData, setChartData] = useState<{ name: string; tasks: number }[]>(
+    []
+  );
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [get_ActiveTasks, setActiveTasks] = useState(0);
 
-      
+
   useEffect(() => {
     const unsubGetActiveTasks = getActiveTasks(projectId, (tasks) => {
       setActiveTasks(tasks);
-      console.log("active tasks:", tasks);
-      
     });
     return () => {
       unsubGetActiveTasks();
@@ -70,11 +72,9 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     // Subscribe to Firestore updates
     const unsubscribe = getCriticalPath(projectId, (tasks) => {
       setCriticalTasks(tasks);
-      console.log("Live critical tasks:", tasks);
     });
     const unsubProjectEnd = getProjectEnd(projectId, (startDate) => {
       setProjectEnd(startDate);
-      // console.log("Live project start date:", startDate);
     });
 
     getProjectById(projectId).then((proj) => {
@@ -83,13 +83,12 @@ export default function Reports({ projectId }: ReportsManagementProps) {
 
     const unsubProjectStart = getProjectStart(projectId, (startDate) => {
       setProjectStart(startDate);
-      // console.log("Live project start date:", startDate);
     });
 
-    const unsubscribeTasks = listenToTasks(projectId, setTask)
+    const unsubscribeTasks = listenToTasks(projectId, setTask);
     // Cleanup listener on unmount
     return () => {
-      unsubscribe(); 
+      unsubscribe();
       unsubscribeTasks();
       unsubProjectEnd();
       unsubProjectStart();
@@ -103,13 +102,12 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   }, [tasks]);
 
   useEffect(() => {
-
     if (taskWithoutMilestones.length === 0) return;
 
     const totalTasksNumber = taskWithoutMilestones.length;
 
     let progressAverage = 0;
-    taskWithoutMilestones.forEach(element => {
+    taskWithoutMilestones.forEach((element) => {
       progressAverage += element.progress;
     });
 
@@ -118,16 +116,18 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     const dateNow = new Date();
     const overdueTasks = taskWithoutMilestones.filter((task) => {
       if (task.startDate instanceof Date) {
-      const taskEndDate = addDays(task.startDate, task.duration);
+        const taskEndDate = addDays(task.startDate, task.duration);
 
-      return taskEndDate < dateNow && task.progress < 100;
+        return taskEndDate < dateNow && task.progress < 100;
       }
     });
 
     setOverDueRate((overdueTasks.length / totalTasksNumber) * 100);
-    setTasksCompleted((taskWithoutMilestones.filter((task) => task.progress === 100).length / taskWithoutMilestones.length) * 100); 
-
-    
+    setTasksCompleted(
+      (taskWithoutMilestones.filter((task) => task.progress === 100).length /
+        taskWithoutMilestones.length) *
+        100
+    );
   }, [taskWithoutMilestones]);
 
   useEffect(() => {
@@ -148,7 +148,6 @@ export default function Reports({ projectId }: ReportsManagementProps) {
       name: `Week ${week}`,
       tasks: tasksByWeek[Number(week)],
     }));
-    
 
     setChartData(chartData); // Update state for the chart
   }, [tasks, get_ProjectStart]);
@@ -184,7 +183,9 @@ export default function Reports({ projectId }: ReportsManagementProps) {
             Export to PDF
           </button>
         </div>
-        <p className="text-gray-500 mb-4">Detailed report for your project as of {currentTime.toLocaleString()}</p>
+        <p className="text-gray-500 mb-4">
+          Detailed report for your project as of {currentTime.toLocaleString()}
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-gradient-to-r from-[#e6f0fa] via-white to-[#f7fafd] rounded-xl p-4 border border-[#b3d1f7]">
           <div>
             <span className="text-sm text-gray-500">Project Name</span>
@@ -206,74 +207,76 @@ export default function Reports({ projectId }: ReportsManagementProps) {
           </div>
           <div>
             <span className="text-sm text-gray-500">Status</span>
-            <div className="font-bold text-green-600 text-lg">{project?.status && capitalizeWords(project?.status)}</div>
+            <div className="font-bold text-green-600 text-lg">
+              {project?.status && capitalizeWords(project?.status)}
+            </div>
           </div>
           <div>
             <span className="text-sm text-gray-500">Tasks Completed</span>
-            <div className="font-bold text-blue-600 text-lg">{
-              (tasksCompleted.toFixed(2))
-            }%</div>
+            <div className="font-bold text-blue-600 text-lg">
+              {tasksCompleted.toFixed(2)}%
+            </div>
           </div>
           <div>
             <span className="text-sm text-gray-500">Overdue Rate</span>
-            <div className="font-bold text-red-600 text-lg">{overdueRate.toFixed(2)}%</div>
+            <div className="font-bold text-red-600 text-lg">
+              {overdueRate.toFixed(2)}%
+            </div>
           </div>
           <div></div>
         </div>
       </div>
 
-      
-
       {/* KPI Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div
-            className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start"
-          >
-            <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
-              Overall Progress
-            </span>
-            <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-              {overallProgress.toFixed(2)}
-              <span className="text-base text-gray-500 ml-1">%</span>
-            </span>
-              <ProgressBar value={Number(overallProgress.toFixed(2))} />
+        <div className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start">
+          <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
+            Overall Progress
+          </span>
+          <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
+            {overallProgress.toFixed(2)}
+            <span className="text-base text-gray-500 ml-1">%</span>
+          </span>
+          <ProgressBar value={Number(overallProgress.toFixed(2))} />
         </div>
 
-
-        <div
-            className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start"
-          >
-            <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
-              Number of Completed Tasks
+        <div className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start">
+          <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
+            Number of Completed Tasks
+          </span>
+          <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
+            {
+              taskWithoutMilestones.filter((task) => task.progress === 100)
+                .length
+            }
+            <span className="text-base text-gray-500 ml-1">
+              of {taskWithoutMilestones.length}
             </span>
-            <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-              {taskWithoutMilestones.filter((task) => task.progress === 100).length}
-              <span className="text-base text-gray-500 ml-1">of {taskWithoutMilestones.length}</span>
-            </span>
+          </span>
         </div>
 
-        <div
-            className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start"
-          >
-            <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
-              Active Tasks
+        <div className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start">
+          <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
+            Active Tasks
+          </span>
+          <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
+            {
+              /* {taskWithoutMilestones.filter((task) => task.progress !== 100).length} */ get_ActiveTasks
+            }
+            <span className="text-base text-gray-500 ml-1">
+              of {taskWithoutMilestones.length}
             </span>
-            <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-              {/* {taskWithoutMilestones.filter((task) => task.progress !== 100).length} */get_ActiveTasks}
-              <span className="text-base text-gray-500 ml-1">of {taskWithoutMilestones.length}</span>
-            </span>
+          </span>
         </div>
 
-        <div
-            className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start"
-          >
-            <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
-              Critical Path Length
-            </span>
-            <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
-            {(Number(get_ProjectEnd) - Number(get_ProjectStart)) / 86400000 }
-              <span className="text-base text-gray-500 ml-1">days</span>
-            </span>
+        <div className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start">
+          <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
+            Critical Path Length
+          </span>
+          <span className="text-3xl font-bold text-[#0f6cbd] mb-2">
+            {(Number(get_ProjectEnd) - Number(get_ProjectStart)) / 86400000}
+            <span className="text-base text-gray-500 ml-1">days</span>
+          </span>
         </div>
       </div>
 
