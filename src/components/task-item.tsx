@@ -151,7 +151,7 @@ export default function TaskItem({ task, projectId }: TaskItemProps) {
               taskId={task.docId}
               onClose={() => setShowUploadModal(false)}
               projectId={projectId || ""}
-              canAddFiles={false}
+              canAddFiles={true}
             />
           )}
         </div>
