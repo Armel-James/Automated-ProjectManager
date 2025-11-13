@@ -339,8 +339,10 @@ export default function MembersManagement({
             {/* Access select */}
             <select
               className="rounded-2xl border border-[#d1e4f7] bg-white/60 px-4 py-2 text-gray-900 font-medium shadow focus:outline-none focus:border-[#0f6cbd] focus:ring-2 focus:ring-[#0f6cbd]/30 transition"
-              defaultValue="member"
-              onChange={(e) => setNewLevel(e.target.value as any)}
+              defaultValue={"Member"}
+              onChange={(e) => {
+                setNewLevel(e.target.value as "Leader" | "Member");
+              }}
             >
               <option value="Leader">Leader</option>
               <option value="Member">Member</option>
