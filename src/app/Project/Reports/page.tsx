@@ -62,7 +62,6 @@ export default function Reports({ projectId }: ReportsManagementProps) {
 
   const reportRef = useRef<HTMLDivElement>(null);
 
-
   useEffect(() => {
     const unsubGetActiveTasks = getActiveTasks(projectId, (tasks) => {
       setActiveTasks(tasks);
@@ -202,7 +201,6 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     });
   }
 
-
   const milestoneData = [
     { name: "Planning", date: "Sep 25, 2025", progress: 100 },
     { name: "Design", date: "Oct 15, 2025", progress: 100 },
@@ -212,11 +210,15 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   ];
 
   return (
-    <div ref={reportRef}  className="w-full px-8 py-6 space-y-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+    <div
+      ref={reportRef}
+      className="w-full px-8 py-6 space-y-8 bg-white rounded-2xl shadow-lg border border-gray-100"
+    >
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-800">Project Reports</h1>
-          <button id="export-btn"
+          <button
+            id="export-btn"
             className="px-4 py-2 bg-[#0f6cbd] text-white rounded shadow hover:bg-[#0d5ca1] focus:outline-none focus:ring-2 focus:ring-[#0f6cbd]/50"
             onClick={() => handleExport()}
           >
@@ -303,9 +305,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
             {
               /* {taskWithoutMilestones.filter((task) => task.progress !== 100).length} */ get_ActiveTasks
             }
-            <span className="text-base text-gray-500 ml-1">
-              of {taskWithoutMilestones.length}
-            </span>
+            <span className="text-base text-gray-500 ml-1">today</span>
           </span>
         </div>
 

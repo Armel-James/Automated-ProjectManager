@@ -189,12 +189,12 @@ export default function MembersManagement({
 
     const currentTeamName = teams.find((t) => t.id === teamId)?.name;
 
-    for (const member of members) {
-      if (member.teamName === currentTeamName) {
-        console.log("Updating member:", member.id);
-        updateMember(projectId, member.id, { teamName: editTeamName });
-      }
-    }
+    // for (const member of members) {
+    //   if (member.teamName === currentTeamName) {
+    //     console.log("Updating member:", member.id);
+    //     updateMember(projectId, member.id, { teamName: editTeamName });
+    //   }
+    // }
 
     updateTeam(projectId, teamId, { name: editTeamName }).then(() => {
       setTeams((prev) =>
