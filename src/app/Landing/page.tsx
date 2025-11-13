@@ -5,6 +5,9 @@ import heroPhoto from "../../assets/images/photo-1.png";
 import collabPhoto from "../../assets/images/collaboration.png";
 import reportsPhoto from "../../assets/images/reports-pic.png";
 import taskManagementPhoto from "../../assets/images/task-management.png";
+import jelmarPhoto from "../../assets/images/jelmar.png";
+import armelPhoto from "../../assets/images/armel.png";
+import marxPhoto from "../../assets/images/marx.png";
 
 function Landing() {
   const navigate = useNavigate();
@@ -263,7 +266,7 @@ function Landing() {
               <div className="bg-white rounded-xl p-6 shadow-md flex flex-col items-center">
                 <div className="w-24 h-24 mb-4 rounded-full bg-[#a8dadc] flex items-center justify-center">
                   <img
-                    src="https://via.placeholder.com/96"
+                    src={armelPhoto}
                     alt="Person 1"
                     className="rounded-full object-cover w-full h-full"
                   />
@@ -279,7 +282,7 @@ function Landing() {
               <div className="bg-white rounded-xl p-6 shadow-md flex flex-col items-center">
                 <div className="w-24 h-24 mb-4 rounded-full bg-[#a8dadc] flex items-center justify-center">
                   <img
-                    src="https://via.placeholder.com/96"
+                    src={jelmarPhoto}
                     alt="Person 2"
                     className="rounded-full object-cover w-full h-full"
                   />
@@ -293,7 +296,7 @@ function Landing() {
               <div className="bg-white rounded-xl p-6 shadow-md flex flex-col items-center">
                 <div className="w-24 h-24 mb-4 rounded-full bg-[#a8dadc] flex items-center justify-center">
                   <img
-                    src="https://via.placeholder.com/96"
+                    src={marxPhoto}
                     alt="Person 3"
                     className="rounded-full object-cover w-full h-full"
                   />
