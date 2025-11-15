@@ -17,6 +17,10 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { onSnapshot } from "firebase/firestore";
+import type { User } from "firebase/auth";
+import type { CSVItemData } from "../../util/csv";
+import { createTasksInBulk } from "./tasks";
+import { addDays } from "../../util/date";
 
 const projectsRef = collection(db, "projects");
 
@@ -35,11 +39,63 @@ export async function createProject(project: Project, user: any) {
       updatedAt: new Date(),
       taskIndex: 0,
     });
-
-    console.log("created project successfuly: ", docRef.id);
+    return docRef.id;
   } catch (e) {
     console.error("Error adding project");
   }
+}
+
+export async function createProjectFromTemplate(
+  user: User,
+  projectName: string,
+  projectDescription: string,
+  tasks: CSVItemData[]
+) {
+  if (!user) {
+    throw new Error("Invalid Owner of Project");
+  }
+
+  const totalDuration = tasks.reduce((sum, task) => {
+    return sum + Number(task.duration);
+  }, 0);
+
+  createProject(
+    {
+      name: projectName,
+      description: projectDescription,
+      ownerID: user.uid,
+      members: [],
+      status: "active",
+      progress: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      taskIndex: 0,
+      expectedEndDate: addDays(new Date(), totalDuration),
+    } as Project,
+    user
+  ).then((newProjectId) => {
+    const structuredTasks = tasks.map((task, index) => ({
+      id: String(index),
+      name: task.name,
+      duration: Number(task.duration),
+      notes: task.notes || "",
+      startDate: task.startDate || new Date(),
+      progress: 0,
+      dependency: "",
+      order: 0,
+      parentId: null,
+      assignedMembers: [],
+      docId: 0,
+    }));
+
+    createTasksInBulk(newProjectId as string, structuredTasks);
+
+    console.log(
+      "Created project from template with ID:",
+      newProjectId,
+      structuredTasks
+    );
+  });
 }
 
 export async function updateProject(

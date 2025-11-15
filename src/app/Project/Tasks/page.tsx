@@ -119,6 +119,10 @@ function TasksView({ projectId }: TasksViewProps) {
     };
   }, [projectId]);
 
+  useEffect(() => {
+    console.log("Tasks loaded:", tasks);
+  }, [tasks]);
+
   const taskFields: any = {
     id: "id",
     name: "name",
@@ -313,7 +317,7 @@ function TasksView({ projectId }: TasksViewProps) {
 
                 console.log(newTaskIndex);
 
-                childrenOfParent[newTaskIndex].docId = String(taskIndex);
+                childrenOfParent[newTaskIndex].docId = taskIndex;
                 for (
                   let i = newTaskIndex + 1;
                   i < childrenOfParent.length;

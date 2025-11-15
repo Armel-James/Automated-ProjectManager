@@ -8,13 +8,13 @@ export interface Task {
   notes?: string;
   progress: number;
   duration: number;
-  parentId?: string;
+  parentId?: string | null;
   dependency: string | null;
   assignedMembers?: GanttMember[] | null;
   createdAt?: Date | Timestamp;
   updatedAt?: Date | Timestamp;
   order: number;
-  docId: string;
+  docId: number;
 }
 
 export const CoreTaskFields: any = {

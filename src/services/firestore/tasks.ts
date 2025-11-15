@@ -15,6 +15,7 @@ import {
   limit,
   orderBy,
   query,
+  writeBatch,
 } from "firebase/firestore";
 import { getProjectById, getTaskIndex, incTaskIndex } from "./projects";
 import type { GanttMember, Member } from "../../types/member";
@@ -143,7 +144,6 @@ export function getActiveTasks(
         todayDate >= endDate.toDateString() && todayDate <= endDateStr,
         a
       );
-      
     });
     callback(a);
   });
@@ -474,3 +474,32 @@ export async function getTaskAssignedMembersEmails(
   projectId: string,
   taskId: string
 ) {}
+
+export async function createTasksInBulk(projectId: string, tasks: Task[]) {
+  try {
+    const batch = writeBatch(db);
+
+    for (const task of tasks) {
+      const newTaskId = await getTaskIndex(projectId);
+      const taskRef = doc(
+        db,
+        "projects",
+        projectId,
+        "tasks",
+        String(newTaskId)
+      );
+
+      batch.set(taskRef, {
+        ...task,
+        docId: newTaskId,
+      });
+
+      // Increment task index for each task
+      incTaskIndex(projectId, newTaskId);
+    }
+
+    await batch.commit();
+  } catch (e) {
+    console.error("Error creating tasks in bulk:", e);
+  }
+}
