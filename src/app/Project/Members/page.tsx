@@ -72,6 +72,8 @@ export default function MembersManagement({
       alert("Please fill in all fields.");
       return;
     }
+  
+    if (newPhoneNumber)
 
     if (!emailRegex.test(newEmail)) {
       alert("Please enter a valid email address.");

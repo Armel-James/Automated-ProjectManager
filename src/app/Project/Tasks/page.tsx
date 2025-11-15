@@ -64,6 +64,8 @@ function TasksView({ projectId }: TasksViewProps) {
     allowTaskbarEditing: true,
   };
 
+  const today = new Date();
+
   function handleToolbarClick(args: any) {
     if (!ganttRef.current) {
       console.error("Gantt reference is null");
@@ -208,6 +210,9 @@ function TasksView({ projectId }: TasksViewProps) {
           toolbar={toolbarOptions}
           enableCriticalPath={true}
           toolbarClick={handleToolbarClick}
+          eventMarkers={[
+            { day: today, label: 'Today', cssClass: 'today-line' }
+          ]}
           selectionSettings={{
             mode: "Row",
             type: "Multiple",

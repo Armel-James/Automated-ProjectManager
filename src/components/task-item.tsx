@@ -3,7 +3,6 @@ import type { Task } from "../types/task";
 import { useEffect, useState } from "react";
 import { useAuth } from "../services/firebase/auth-context";
 import {
-  addCommentToTask,
   getRecentComment,
 } from "../services/firestore/comments";
 import { addDays } from "../util/date";
@@ -13,24 +12,25 @@ import UploadModal from "./UploadModal/upload-modal";
 interface TaskItemProps {
   task: Task;
   projectId?: string;
-  //comments: Comment[];
 }
 
 export default function TaskItem({ task, projectId }: TaskItemProps) {
   const { user } = useAuth();
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [thisTask, setThisTask] = useState<Task>(task);
-  const [modalCommentInput, setModalCommentInput] = useState("");
   const [lastComment, setLastComment] = useState<Comment | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     setThisTask(task);
-
     getRecentComment(projectId || "", task.docId).then((comment) => {
       setLastComment(comment);
     });
   }, [task]);
+
+  useEffect(() => {
+    console.log(lastComment?.createdAt);
+  }, [lastComment])
 
   return (
     <li
@@ -55,7 +55,7 @@ export default function TaskItem({ task, projectId }: TaskItemProps) {
             <span className="text-xs text-gray-500 flex items-center">
               Start:
               <span className="font-medium text-[#0f6cbd] ml-1">
-                {new Date(thisTask.startDate as any).toLocaleDateString() ||
+                {new Date(thisTask.startDate as Date).toLocaleDateString() ||
                   "N/A"}
               </span>
             </span>
@@ -63,7 +63,7 @@ export default function TaskItem({ task, projectId }: TaskItemProps) {
               End:
               <span className="font-medium text-[#d1502f] ml-1">
                 {addDays(
-                  new Date(thisTask.startDate as any),
+                  new Date(thisTask.startDate as Date),
                   7
                 ).toLocaleDateString() || "N/A"}
               </span>

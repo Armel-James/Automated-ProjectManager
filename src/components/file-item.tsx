@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FileUpload } from "../types/fileupload";
-import ProgressBar from "./progress-bar";
 import { getAuth } from "firebase/auth";
 import { FaFileAlt, FaTrashAlt } from "react-icons/fa";
-import { deleteUploadRecord } from "../services/firestore/files";
 import { deleteFile } from "../services/firebase-storage/storage";
 import Modal from "./modal";
 
@@ -18,7 +16,6 @@ export default function FileItem({
   taskId,
   projectId,
   file,
-  index,
 }: FileItemProps) {
   const currentUser = getAuth().currentUser;
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

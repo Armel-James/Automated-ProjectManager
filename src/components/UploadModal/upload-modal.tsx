@@ -4,7 +4,7 @@ import type { FileUpload } from "../../types/fileupload";
 import FileItem from "../file-item";
 import { getAuth } from "firebase/auth";
 import { uploadFile } from "../../services/firebase-storage/storage";
-import type { User } from "firebase/auth";
+
 import { listenToUploads } from "../../services/firestore/files";
 
 interface UploadModalProps {
