@@ -80,11 +80,13 @@ function TasksView({ projectId }: TasksViewProps) {
   }
 
   const rowSelected = (args: any) => {
+    if (!args.data) return;
     if (ganttRef.current) {
       ganttRef.current.enableItems(["SubmissionsButton"], true); // Enable the button
     }
 
     //setSelectedRow(args.data);
+
     if (args.data.length > 1) setSelectedRow(null);
     else setSelectedRow(args.data);
   };

@@ -48,7 +48,7 @@ export async function getAllTasks(projectId: string) {
     const docData = doc.data();
     return {
       id: doc.id,
-      docId: doc.id,
+      docId: Number(doc.id),
       ...docData,
       startDate: docData.startDate.toDate(),
     };
@@ -67,7 +67,7 @@ export function listenToTask(
     const task = doc.exists()
       ? ({
           id: doc.id,
-          docId: doc.id,
+          docId: Number(doc.id),
           ...docData,
           startDate: docData?.startDate?.toDate?.() || new Date(),
         } as Task)
@@ -87,7 +87,7 @@ export function listenToTasks(
       const docData = doc.data();
       return {
         id: doc.id,
-        docId: doc.id,
+        docId: Number(doc.id),
         ...docData,
         startDate: docData.startDate?.toDate?.() || new Date(),
       } as Task;
@@ -202,7 +202,7 @@ export function listenToTaskByTeam(
         const docData = doc.data();
         return {
           id: doc.id,
-          docId: doc.id,
+          docId: Number(doc.id),
           ...docData,
           startDate: new Date(docData.startDate?.toDate?.()),
         } as Task;
@@ -230,7 +230,7 @@ export function listenToTasksByAssignedMember(
         const docData = doc.data();
         return {
           id: doc.id,
-          docId: doc.id,
+          docId: Number(doc.id),
           ...docData,
           startDate: docData.startDate?.toDate?.() || new Date(),
           assignedMembers:
