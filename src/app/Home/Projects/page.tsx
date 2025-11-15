@@ -81,6 +81,12 @@ export default function Projects() {
       const parsedData: CSVItemData[] | null = await convertCSVFiletoJSON(
         uploadedFile
       );
+
+      if (!parsedData) {
+        alert("Failed to parse CSV file. Please check the file format.");
+        return;
+      }
+
       if (parsedData) setParsedCSVData(parsedData);
       if (parsedData && user && projectName && projectDescription) {
         createProjectFromTemplate(
@@ -242,7 +248,7 @@ export default function Projects() {
               Use this{" "}
               <a
                 className="font-semibold text-blue-500 hover:underline cursor-pointer"
-                href="https://firebasestorage.googleapis.com/v0/b/project-manager-1c297.firebasestorage.app/o/assets%2Ftasks.xlsx?alt=media&token=4a762cd0-af1b-458f-bff3-a863d45e04a8"
+                href="https://firebasestorage.googleapis.com/v0/b/project-manager-1c297.firebasestorage.app/o/assets%2Ftasks.xlsx?alt=media&token=6e66d1aa-2136-4b83-b560-d2bd91989196"
               >
                 CSV template
               </a>{" "}

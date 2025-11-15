@@ -122,7 +122,7 @@ function TasksView({ projectId }: TasksViewProps) {
   }, [projectId]);
 
   useEffect(() => {
-    console.log("Tasks loaded:", tasks);
+    //console.log("Tasks loaded:", tasks);
   }, [tasks]);
 
   const taskFields: any = {
@@ -233,6 +233,9 @@ function TasksView({ projectId }: TasksViewProps) {
           allowRowDragAndDrop={true}
           enableContextMenu={true}
           taskbarEditing={(args) => {
+            if (args.data.progress > 0) {
+              args.cancel = true; // Prevents dragging/resizing
+            }
             currentTaskToEdit.current = {
               ...args.data,
             };
@@ -249,6 +252,12 @@ function TasksView({ projectId }: TasksViewProps) {
               currentTaskToEdit.current = {
                 ...args.rowData,
               };
+            }
+
+            if (args.requestType === "beforeOpenEditDialog") {
+              if (args.rowData.progress > 0) {
+                args.cancel = true;
+              }
             }
 
             if (args.requestType === "beforeOpenEditDialog") {

@@ -26,16 +26,16 @@ export const convertCSVFiletoJSON = (
           if (validateData(results.data as CSVItemData[])) {
             resolve(results.data as CSVItemData[]);
           } else {
+            alert("CSV data validation failed.");
             resolve(null);
           }
         },
         error: (error) => {
-          console.error("Error parsing CSV file:", error);
           reject(error);
         },
       });
     } catch (error) {
-      console.error("Error parsing CSV file:", error);
+      alert(`Error parsing CSV file: ${error}`);
       reject(error);
     }
   });
@@ -44,20 +44,23 @@ export const convertCSVFiletoJSON = (
 // Function to validate JSON data structure
 export const validateData = (data: CSVItemData[]): boolean => {
   data.forEach((item, index) => {
-    console.log("Validating item:", item);
     if (!item.name || typeof item.name !== "string") {
+      alert(`Invalid or missing 'name' at row ${index + 1}`);
       throw new Error(`Invalid or missing 'name' at row ${index + 1}`);
     }
 
     if (!item.duration || isNaN(Number(item.duration))) {
+      alert(`Invalid or missing 'duration' at row ${index + 1}`);
       throw new Error(`Invalid or missing 'duration' at row ${index + 1}`);
     }
 
     if (item.startDate && !(item.startDate instanceof Date)) {
+      alert(`Invalid 'startDate' at row ${index + 1}`);
       throw new Error(`Invalid 'startDate' at row ${index + 1}`);
     }
 
     if (item.notes && typeof item.notes !== "string") {
+      alert(`Invalid 'notes' at row ${index + 1}`);
       throw new Error(`Invalid 'notes' at row ${index + 1}`);
     }
   });
