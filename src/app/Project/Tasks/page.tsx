@@ -211,7 +211,14 @@ function TasksView({ projectId }: TasksViewProps) {
           enableCriticalPath={true}
           toolbarClick={handleToolbarClick}
           eventMarkers={[
-            { day: today, label: 'Today', cssClass: 'today-line' }
+            {
+              day: today,
+              label: `Today: ${today.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}`,
+              cssClass: "today-line",
+            },
           ]}
           selectionSettings={{
             mode: "Row",

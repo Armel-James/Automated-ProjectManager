@@ -156,7 +156,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   }, [tasks, get_ProjectStart]);
 
   // Helper function to calculate week number from project start
-  function getWeekFromProjectStart(taskDate, projectStartDate) {
+  function getWeekFromProjectStart(taskDate: any, projectStartDate: any) {
     const diffInMs = taskDate - projectStartDate;
     const diffInDays = Math.floor(diffInMs / (24 * 60 * 60 * 1000));
     return Math.ceil((diffInDays + 1) / 7);
