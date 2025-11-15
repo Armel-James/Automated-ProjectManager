@@ -48,6 +48,7 @@ interface TasksViewProps {
 
 function TasksView({ projectId }: TasksViewProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [toItemDependency, setToItemDependency] = useState<any>(null);
   const ganttRef = useRef<GanttComponent>(null);
   const [selectedRow, setSelectedRow] = useState<any>(null);
   const currentTaskToEdit = useRef<any>(null);
@@ -236,6 +237,7 @@ function TasksView({ projectId }: TasksViewProps) {
             if (args.data.progress > 0) {
               args.cancel = true; // Prevents dragging/resizing
             }
+
             currentTaskToEdit.current = {
               ...args.data,
             };
@@ -248,10 +250,35 @@ function TasksView({ projectId }: TasksViewProps) {
             //console.log("old data: ", currentTaskToEdit.current);
           }}
           actionBegin={(args) => {
+            console.log(
+              "Args.requestType:",
+              args.requestType,
+              " toItem",
+              toItemDependency
+            );
             if (args.requestType === "beforeOpenEditDialog") {
               currentTaskToEdit.current = {
                 ...args.rowData,
               };
+            }
+
+            if (args.requestType === "taskbarediting") {
+              setToItemDependency(null);
+            }
+
+            if (args.requestType === "ValidateDependency") {
+              //console.log("Validating dependency...", args);
+              setToItemDependency(args.toItem);
+            }
+
+            if (args.requestType === "beforeSave" && toItemDependency) {
+              if (toItemDependency.progress > 0) {
+                args.cancel = true;
+              }
+              setTimeout(() => {
+                setToItemDependency(null);
+              }, 0);
+              console.log("saved");
             }
 
             if (args.requestType === "beforeOpenEditDialog") {
