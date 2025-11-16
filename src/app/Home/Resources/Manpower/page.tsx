@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
 import Modal from "../../../../components/modal";
 import EmployeeRow from "./EmployeeRow";
-import { testEmployees } from "./manpower-testdata";
-
-interface Employee {
-  id: string;
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  phoneNumber: string;
-  email: string;
-}
+import type { Employee } from "../../../../types/employee";
+import {
+  createEmployee,
+  deleteEmployee,
+  updateEmployee,
+} from "../../../../services/firestore/employees";
+import { getAuth, type User } from "firebase/auth";
+import { listenToEmployees } from "../../../../services/firestore/employees";
+import { capitalizeWords } from "../../../../util/string-processing";
 
 const Manpower = () => {
-  const [employees, setEmployees] = useState<Employee[]>(testEmployees);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const currentUser: User | null = getAuth().currentUser;
   const [newEmployee, setNewEmployee] = useState<Employee>({
     id: "",
     firstName: "",
@@ -35,8 +35,14 @@ const Manpower = () => {
   const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
 
   useEffect(() => {
-    console.log("Current Employees:", testEmployees);
-  }, [testEmployees]);
+    if (currentUser) {
+      const unsubscribeToEmployees = listenToEmployees(
+        currentUser ? currentUser.uid : "",
+        setEmployees
+      );
+      return () => unsubscribeToEmployees();
+    }
+  }, [currentUser]);
 
   const validateEmployee = (employee: Employee) => {
     const errors: any = {};
@@ -72,21 +78,46 @@ const Manpower = () => {
     return errors;
   };
 
+  function trimEmployeeFields(employee: Employee): Employee {
+    return {
+      id: employee.id.trim(),
+      firstName: employee.firstName.trim(),
+      middleName: employee.middleName.trim(),
+      lastName: employee.lastName.trim(),
+      phoneNumber: employee.phoneNumber.trim(),
+      email: employee.email.trim(),
+    };
+  }
+
+  function capitalizedName(employee: Employee): Employee {
+    return {
+      id: employee.id,
+      firstName: capitalizeWords(employee.firstName),
+      middleName: capitalizeWords(employee.middleName),
+      lastName: capitalizeWords(employee.lastName),
+      phoneNumber: employee.phoneNumber,
+      email: employee.email,
+    };
+  }
+
+  function isNameExisting(capitalizedNameEmployee: Employee): boolean {
+    return employees.some((emp) => {
+      return (
+        emp.firstName === capitalizedNameEmployee.firstName &&
+        emp.lastName === capitalizedNameEmployee.lastName &&
+        emp.middleName === capitalizedNameEmployee.middleName
+      );
+    });
+  }
+
   const handleAddEmployee = () => {
     const validationErrors = validateEmployee(newEmployee);
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-    setEmployees([...employees, newEmployee]);
-    setNewEmployee({
-      id: "",
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      phoneNumber: "",
-      email: "",
-    });
+
     setErrors({
       id: "",
       firstName: "",
@@ -95,9 +126,60 @@ const Manpower = () => {
       phoneNumber: "",
       email: "",
     });
-    setIsModalOpen(false);
 
-    console.log("Employee added:", newEmployee);
+    const trimmedEmployee = trimEmployeeFields(newEmployee);
+    const existingEmployee = employees.find(
+      (emp) => emp.id === trimmedEmployee.id
+    );
+
+    const existingEmailEmployee = employees.find(
+      (emp) => emp.email === trimmedEmployee.email
+    );
+
+    const existingPhoneEmployee = employees.find(
+      (emp) => emp.phoneNumber === trimmedEmployee.phoneNumber
+    );
+
+    if (existingEmployee) {
+      alert("An employee with this ID already exists. Please use a unique ID.");
+      return;
+    }
+
+    if (existingEmailEmployee) {
+      alert(
+        "An employee with this email already exists. Please use a unique email."
+      );
+      return;
+    }
+
+    if (existingPhoneEmployee) {
+      alert(
+        "An employee with this phone number already exists. Please use a unique phone number."
+      );
+      return;
+    }
+
+    // Cleaning
+    if (trimmedEmployee.email === currentUser?.email) {
+      alert("Employee email cannot be the same as the current user's email.");
+      return;
+    }
+
+    const capitalizedNamedEmployee = capitalizedName(trimmedEmployee);
+
+    if (isNameExisting(capitalizedNamedEmployee)) {
+      console.log("Duplicate name found");
+      alert(
+        "An employee with this name already exists. Please use a unique name."
+      );
+      return;
+    }
+
+    // if (currentUser) {
+    //   createEmployee(currentUser.uid, capitalizedNamedEmployee);
+    // }
+
+    // setIsModalOpen(false);
   };
 
   const openModal = () => {
@@ -126,19 +208,59 @@ const Manpower = () => {
   };
 
   const handleSaveEditedEmployee = () => {
-    if (employeeToEdit) {
+    if (employeeToEdit && currentUser) {
       const validationErrors = validateEmployee(employeeToEdit);
-      console.log("Validation Errors:", validationErrors);
+      const trimmedEmployee = trimEmployeeFields(employeeToEdit);
+
       if (Object.keys(validationErrors).length > 0) {
         setErrors(validationErrors);
         return;
       }
 
-      setEmployees((prevEmployees) =>
-        prevEmployees.map((emp) =>
-          emp.id === employeeToEdit.id ? employeeToEdit : emp
-        )
+      const filteredEmployeesWithoutCurrent = employees.filter(
+        (emp) => emp.id !== trimmedEmployee.id
       );
+
+      const existingEmailEmployee = filteredEmployeesWithoutCurrent.find(
+        (emp) => emp.email === trimmedEmployee.email
+      );
+
+      const existingPhoneEmployee = filteredEmployeesWithoutCurrent.find(
+        (emp) => emp.phoneNumber === trimmedEmployee.phoneNumber
+      );
+
+      if (existingEmailEmployee) {
+        alert(
+          "An employee with this email already exists. Please use a unique email."
+        );
+        return;
+      }
+
+      if (existingPhoneEmployee) {
+        alert(
+          "An employee with this phone number already exists. Please use a unique phone number."
+        );
+        return;
+      }
+
+      // Cleaning
+      if (trimmedEmployee.email === currentUser?.email) {
+        alert("Employee email cannot be the same as the current user's email.");
+        return;
+      }
+
+      const capitalizedNamedEmployee = capitalizedName(trimmedEmployee);
+
+      if (isNameExisting(capitalizedNamedEmployee)) {
+        console.log("Duplicate name found");
+        alert(
+          "An employee with this name already exists. Please use a unique name."
+        );
+        return;
+      }
+
+      updateEmployee(currentUser.uid, capitalizedNamedEmployee);
+
       setIsEditModalOpen(false);
       setEmployeeToEdit(null);
     }
@@ -209,6 +331,12 @@ const Manpower = () => {
                 onChange={(e) =>
                   setNewEmployee({ ...newEmployee, id: e.target.value })
                 }
+                onKeyDown={(e) => {
+                  const charCode = e.key.charCodeAt(0);
+                  if (!/[a-zA-Z0-9]/.test(e.key)) {
+                    e.preventDefault(); // Prevent non-alphanumeric characters
+                  }
+                }}
                 className="border border-gray-300 rounded-lg p-2 h-10"
               />
               {errors.id && <p className="text-red-500 text-sm">{errors.id}</p>}
@@ -221,6 +349,11 @@ const Manpower = () => {
                 onChange={(e) =>
                   setNewEmployee({ ...newEmployee, firstName: e.target.value })
                 }
+                onKeyDown={(e) => {
+                  if (!/[a-zA-Z ]/.test(e.key) && e.key !== "Backspace") {
+                    e.preventDefault(); // Prevent non-alphabetic and non-space characters
+                  }
+                }}
                 className="border border-gray-300 rounded-lg p-2 h-10"
               />
               {errors.firstName && (
@@ -234,6 +367,11 @@ const Manpower = () => {
               onChange={(e) =>
                 setNewEmployee({ ...newEmployee, middleName: e.target.value })
               }
+              onKeyDown={(e) => {
+                if (!/[a-zA-Z ]/.test(e.key) && e.key !== "Backspace") {
+                  e.preventDefault(); // Prevent non-alphabetic and non-space characters
+                }
+              }}
               className="border border-gray-300 rounded-lg p-2 h-10"
             />
             <div>
@@ -244,6 +382,11 @@ const Manpower = () => {
                 onChange={(e) =>
                   setNewEmployee({ ...newEmployee, lastName: e.target.value })
                 }
+                onKeyDown={(e) => {
+                  if (!/[a-zA-Z ]/.test(e.key) && e.key !== "Backspace") {
+                    e.preventDefault(); // Prevent non-alphabetic and non-space characters
+                  }
+                }}
                 className="border border-gray-300 rounded-lg p-2 h-10"
               />
               {errors.lastName && (
@@ -402,10 +545,8 @@ const Manpower = () => {
             </div>
             <button
               onClick={() => {
-                if (employeeToEdit) {
-                  setEmployees((prevEmployees) =>
-                    prevEmployees.filter((emp) => emp.id !== employeeToEdit.id)
-                  );
+                if (employeeToEdit && currentUser) {
+                  deleteEmployee(currentUser.uid, employeeToEdit.id);
                   setIsEditModalOpen(false);
                   setEmployeeToEdit(null);
                 }
