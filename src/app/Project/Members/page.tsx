@@ -15,6 +15,8 @@ import {
   updateTeam,
 } from "../../../services/firestore/teams";
 import { useAuth } from "../../../services/firebase/auth-context";
+import type { Employee } from "../../../types/employee";
+import { listenToEmployees } from "../../../services/firestore/employees";
 
 interface MembersManagementProps {
   projectId: string;
@@ -31,27 +33,44 @@ export default function MembersManagement({
       .toUpperCase();
   }
 
+  const { user } = useAuth();
+
   useEffect(() => {
+    if (!user) return;
     const unsubscribeTeams = onTeamsSnapshot(projectId, setTeams);
+    const unsubscribeGlobalEmployees = listenToEmployees(
+      user?.uid || "",
+      setGlobalEmployees
+    );
     const unsubscribeMember = listenToProjectMembers(projectId, setMembers);
     return () => {
       unsubscribeMember();
       unsubscribeTeams();
+      unsubscribeGlobalEmployees();
     };
-  }, [projectId]);
+  }, [projectId, user]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editMember, setEditMember] = useState<Partial<Member>>({});
+  const [employeeSearchType, setEmployeeSearchType] = useState<"id" | "name">(
+    "id"
+  );
+  const [employeeSearchValue, setEmployeeSearchValue] = useState("");
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const [newFullName, setNewFullName] = useState("");
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setnewRole] = useState("");
+  const [newRole, setnewRole] = useState<string[]>([]);
   const [newPhoneNumber, setnewPhoneNumber] = useState("");
   const [newMemberTeamName, setNewMemberTeamName] = useState<string>("None");
   const [newLevel, setNewLevel] = useState<"Leader" | "Member">("Member");
   const [members, setMembers] = useState<Member[]>([]);
-  const { user } = useAuth();
+
+  const [globalEmployees, setGlobalEmployees] = useState<Employee[]>([]);
+  const [filteredGlobalEmployees, setFilteredGlobalEmployees] = useState<
+    Employee[]
+  >([]);
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [newTeamName, setNewTeamName] = useState<string>("");
@@ -60,11 +79,43 @@ export default function MembersManagement({
   const [editTeamId, setEditTeamId] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState<string>("");
 
+  useEffect(() => {
+    handleFilterGlobalEmployees();
+  }, [employeeSearchValue, employeeSearchType, globalEmployees]);
+
+  function handleFilterGlobalEmployees() {
+    if (!employeeSearchValue.trim()) {
+      setFilteredGlobalEmployees([]);
+      return;
+    }
+    const filtered = globalEmployees.filter((employee) => {
+      if (employeeSearchType === "id") {
+        return employee.id
+          .toLowerCase()
+          .includes(employeeSearchValue.toLowerCase());
+      } else if (employeeSearchType === "name") {
+        return (
+          employee.firstName +
+          " " +
+          employee.middleName +
+          " " +
+          employee.lastName
+        )
+          .toLowerCase()
+          .includes(employeeSearchValue.toLowerCase());
+      }
+      return false;
+    });
+    setFilteredGlobalEmployees(filtered);
+  }
+
   const handleAddMember = () => {
+    console.log(inputFields);
+    return;
     if (
       !newFullName.trim() ||
       !newEmail.trim() ||
-      !newRole.trim() ||
+      !newRole.length ||
       !newPhoneNumber.trim() ||
       !newLevel.trim() ||
       newMemberTeamName.trim() === "None"
@@ -72,13 +123,12 @@ export default function MembersManagement({
       alert("Please fill in all fields.");
       return;
     }
-  
-    if (newPhoneNumber)
 
-    if (!emailRegex.test(newEmail)) {
-      alert("Please enter a valid email address.");
-      return;
-    }
+    if (newPhoneNumber)
+      if (!emailRegex.test(newEmail)) {
+        alert("Please enter a valid email address.");
+        return;
+      }
 
     if (user && user.email === newEmail) {
       alert("You can't add your own email here.");
@@ -93,7 +143,7 @@ export default function MembersManagement({
     addMember(projectId, {
       name: newFullName,
       emailAddress: newEmail,
-      role: newRole,
+      role: newRole.join(", "),
       phoneNumber: newPhoneNumber,
       teamName: newTeamName === "None" ? undefined : newMemberTeamName,
       level: newLevel,
@@ -104,7 +154,7 @@ export default function MembersManagement({
           id: id,
           name: newFullName,
           emailAddress: newEmail,
-          role: newRole,
+          role: newRole.join(", "),
           phoneNumber: newPhoneNumber,
           level: newLevel,
           teamName:
@@ -113,7 +163,7 @@ export default function MembersManagement({
       ]);
       setNewFullName("");
       setNewEmail("");
-      setnewRole("");
+      setnewRole([]);
       setnewPhoneNumber("");
     });
     setIsModalOpen(false);
@@ -224,6 +274,51 @@ export default function MembersManagement({
     }
   }
 
+  // New state for search results
+  const [searchResults, setSearchResults] = useState<Member[]>([]);
+
+  // New function to handle member search
+  function handleSearch(value: string) {
+    if (!value) {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = members.filter(
+      (m) =>
+        m.emailAddress.toLowerCase().includes(value.toLowerCase()) ||
+        m.id.toLowerCase().includes(value.toLowerCase())
+    );
+    setSearchResults(results);
+  }
+
+  // New function to handle member selection from search results
+  function handleSelectMember(member: Member) {
+    setEditMember(member);
+    setIsModalOpen(true);
+  }
+
+  const [inputFields, setInputFields] = useState([""]); // Initial state with one empty input
+
+  const handleAddField = () => {
+    setInputFields([...inputFields, ""]); // Add a new empty string to the array
+  };
+
+  const handleRemoveField = (index: number) => {
+    const updatedFields = inputFields.filter((_, i) => i !== index);
+    setInputFields(updatedFields);
+  };
+
+  const handleChange = (
+    index: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const updatedFields = inputFields.map((field, i) =>
+      i === index ? event.target.value : field
+    );
+    setInputFields(updatedFields);
+  };
+
   return (
     <div className="w-full p-8 flex flex-row gap-8 justify-between items-start">
       {/* Members Section (left) */}
@@ -272,84 +367,132 @@ export default function MembersManagement({
             setIsModalOpen(false);
             setNewFullName("");
             setNewEmail("");
-            setnewRole("");
+            setnewRole([]); // Updated to handle multiple roles
             setnewPhoneNumber("");
             setNewMemberTeamName("None");
             setNewLevel("Member");
           }}
           onConfirm={handleAddMember}
         >
-          <form className="flex flex-col gap-4 p-2 min-w-[400px]">
-            <input
-              className="rounded-2xl border border-[#d1e4f7] bg-white/60 backdrop-blur-md px-4 py-2 text-gray-900 font-medium shadow focus:outline-none focus:border-[#0f6cbd] focus:ring-2 focus:ring-[#0f6cbd]/30 transition placeholder:text-gray-500 hover:bg-white/80"
-              type="text"
-              placeholder="Full Name"
-              required
-              style={{ boxShadow: "0 1.5px 8px 0 rgba(15,108,189,0.07)" }}
-              value={newFullName}
-              onChange={(e) => setNewFullName(e.target.value)}
-            />
-            <input
-              className="rounded-2xl border border-[#d1e4f7] bg-white/60 backdrop-blur-md px-4 py-2 text-gray-900 font-medium shadow focus:outline-none focus:border-[#0f6cbd] focus:ring-2 focus:ring-[#0f6cbd]/30 transition placeholder:text-gray-500 hover:bg-white/80"
-              type="email"
-              placeholder="Email Address"
-              required
-              style={{ boxShadow: "0 1.5px 8px 0 rgba(15,108,189,0.07)" }}
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-            />
-            <input
-              className="rounded-2xl border border-[#d1e4f7] bg-white/60 backdrop-blur-md px-4 py-2 text-gray-900 font-medium shadow focus:outline-none focus:border-[#0f6cbd] focus:ring-2 focus:ring-[#0f6cbd]/30 transition placeholder:text-gray-500 hover:bg-white/80"
-              type="tel"
-              inputMode="tel"
-              pattern="[0-9()+\-\s]{7,20}"
-              title="Phone number (digits, spaces, +, -, and parentheses only)"
-              placeholder="Phone Number"
-              style={{ boxShadow: "0 1.5px 8px 0 rgba(15,108,189,0.07)" }}
-              required
-              value={newPhoneNumber}
-              onChange={(e) => setnewPhoneNumber(e.target.value)}
-              onInput={(e) => {
-                const input = e.target as HTMLInputElement;
-                input.value = input.value.replace(/[^0-9()+\-\s]/g, "");
-              }}
-            />
-            <input
-              className="rounded-2xl border border-[#d1e4f7] bg-white/60 backdrop-blur-md px-4 py-2 text-gray-900 font-medium shadow focus:outline-none focus:border-[#0f6cbd] focus:ring-2 focus:ring-[#0f6cbd]/30 transition placeholder:text-gray-500 hover:bg-white/80"
-              type="text"
-              placeholder="Role (e.g. Designer, Developer, Manager)"
-              required
-              style={{ boxShadow: "0 1.5px 8px 0 rgba(15,108,189,0.07)" }}
-              value={newRole}
-              onChange={(e) => setnewRole(e.target.value)}
-            />
-            {/* Team select */}
+          <div className="flex flex-col gap-4 w-xl">
+            {/* Search Input */}
+            <div className="flex gap-2 items-center">
+              <select
+                className="border border-gray-300 rounded-lg p-2"
+                value={employeeSearchType}
+                onChange={(e) =>
+                  setEmployeeSearchType(e.target.value as "id" | "name")
+                }
+              >
+                <option value="id">Search by ID</option>
+                <option value="name">Search by Name</option>
+              </select>
+              <input
+                type="text"
+                placeholder={`Search by ${employeeSearchType}`}
+                className="border border-gray-300 rounded-lg p-2 w-full"
+                value={employeeSearchValue}
+                onChange={(e) => setEmployeeSearchValue(e.target.value)}
+              />
+            </div>
+
             <select
-              className="rounded-2xl border border-[#d1e4f7] bg-white/60 px-4 py-2 text-gray-900 font-medium shadow focus:outline-none focus:border-[#0f6cbd] focus:ring-2 focus:ring-[#0f6cbd]/30 transition"
-              defaultValue="None"
-              onChange={(e) => setNewMemberTeamName(e.target.value)}
+              size={5}
+              className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm bg-white shadow-sm"
             >
-              <option value="None">Select Team</option>
-              {teams.map((team) => {
-                return (
-                  <option key={team.id} value={team.name}>
-                    {team.name}
+              {employeeSearchValue === "" ? (
+                globalEmployees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.lastName}, {employee.firstName} - (
+                    {`${employee.id}`})
                   </option>
-                );
-              })}
+                ))
+              ) : filteredGlobalEmployees.length === 0 ? (
+                <option disabled>No employees found.</option>
+              ) : (
+                filteredGlobalEmployees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.lastName}, {employee.firstName} - (
+                    {`${employee.id}`})
+                  </option>
+                ))
+              )}
             </select>
-            {/* Access select */}
-            <select
-              className="rounded-2xl border border-[#d1e4f7] bg-white/60 px-4 py-2 text-gray-900 font-medium shadow focus:outline-none focus:border-[#0f6cbd] focus:ring-2 focus:ring-[#0f6cbd]/30 transition"
-              defaultValue={"Member"}
-              onChange={(e) => {
-                setNewLevel(e.target.value as "Leader" | "Member");
-              }}
-            >
-              <option value="Leader">Leader</option>
-              <option value="Member">Member</option>
-            </select>
-          </form>
+
+            {/* Team and Level Select Side by Side */}
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <label className="flex-1 text-sm font-medium text-gray-700">
+                  Team
+                  <select
+                    className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm bg-white shadow-sm"
+                    value={newMemberTeamName}
+                    onChange={(e) => setNewMemberTeamName(e.target.value)}
+                  >
+                    <option value="None">None</option>
+                    {teams.map((team) => (
+                      <option key={team.id} value={team.name}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex-1 text-sm font-medium text-gray-700">
+                  Level
+                  <select
+                    className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm bg-white shadow-sm"
+                    value={newLevel}
+                    onChange={(e) =>
+                      setNewLevel(e.target.value as "Leader" | "Member")
+                    }
+                  >
+                    <option value="Leader">Leader</option>
+                    <option value="Member">Member</option>
+                  </select>
+                </label>
+              </div>
+
+              {/* HERE */}
+              {/* Roles Select */}
+              <label className="text-sm font-medium text-gray-700">
+                Roles
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex flex-col gap-2 h-[130px] overflow-y-auto">
+                    {inputFields.map((field, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm shadow-sm"
+                      >
+                        <input
+                          type="text"
+                          value={field}
+                          onChange={(e) => handleChange(index, e)}
+                          className="flex-1 border-none bg-transparent focus:outline-none"
+                          placeholder="Enter role"
+                        />
+                        {index === 0 ? null : (
+                          <button
+                            onClick={() => handleRemoveField(index)}
+                            className="text-red-500 hover:text-red-700 focus:outline-none"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleAddField}
+                    className="bg-[#0f6cbd] text-white font-semibold rounded-lg px-4 py-2 hover:bg-[#155a8a] text-sm transition shadow"
+                  >
+                    Add Role
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
         </Modal>
 
         <div className="w-full bg-white rounded-2xl border border-gray-200 shadow p-8">
@@ -655,6 +798,7 @@ export default function MembersManagement({
                     </button> */}
                     <button
                       className="bg-[#ffeaea] text-[#d43f3a] px-2 py-1 rounded-lg text-xs font-semibold hover:bg-[#ffd6d6] shadow"
+                      title="Delete"
                       onClick={() => handleDeleteTeam(team)}
                     >
                       🗑

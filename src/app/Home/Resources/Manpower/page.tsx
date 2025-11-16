@@ -100,8 +100,11 @@ const Manpower = () => {
     };
   }
 
-  function isNameExisting(capitalizedNameEmployee: Employee): boolean {
-    return employees.some((emp) => {
+  function isNameExisting(
+    capitalizedNameEmployee: Employee,
+    allEmployees: Employee[]
+  ): boolean {
+    return allEmployees.some((emp) => {
       return (
         emp.firstName === capitalizedNameEmployee.firstName &&
         emp.lastName === capitalizedNameEmployee.lastName &&
@@ -167,7 +170,7 @@ const Manpower = () => {
 
     const capitalizedNamedEmployee = capitalizedName(trimmedEmployee);
 
-    if (isNameExisting(capitalizedNamedEmployee)) {
+    if (isNameExisting(capitalizedNamedEmployee, employees)) {
       console.log("Duplicate name found");
       alert(
         "An employee with this name already exists. Please use a unique name."
@@ -208,6 +211,15 @@ const Manpower = () => {
   };
 
   const handleSaveEditedEmployee = () => {
+    setErrors({
+      id: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      phoneNumber: "",
+      email: "",
+    });
+
     if (employeeToEdit && currentUser) {
       const validationErrors = validateEmployee(employeeToEdit);
       const trimmedEmployee = trimEmployeeFields(employeeToEdit);
@@ -251,7 +263,12 @@ const Manpower = () => {
 
       const capitalizedNamedEmployee = capitalizedName(trimmedEmployee);
 
-      if (isNameExisting(capitalizedNamedEmployee)) {
+      if (
+        isNameExisting(
+          capitalizedNamedEmployee,
+          filteredEmployeesWithoutCurrent
+        )
+      ) {
         console.log("Duplicate name found");
         alert(
           "An employee with this name already exists. Please use a unique name."
@@ -439,7 +456,17 @@ const Manpower = () => {
         <Modal
           open={isEditModalOpen}
           setIsOpen={setIsEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setErrors({
+              id: "",
+              firstName: "",
+              middleName: "",
+              lastName: "",
+              phoneNumber: "",
+              email: "",
+            });
+          }}
           onConfirm={handleSaveEditedEmployee}
           title="Edit Employee"
         >
@@ -451,7 +478,7 @@ const Manpower = () => {
                   placeholder="Employee ID"
                   value={employeeToEdit.id}
                   disabled
-                  className="border border-gray-300 rounded-lg p-2 h-10 bg-gray-100 cursor-not-allowed"
+                  className="border text-gray-500 border-gray-300 rounded-lg p-2 h-10 bg-gray-100 cursor-not-allowed"
                 />
               </div>
               <div>

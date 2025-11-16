@@ -17,3 +17,8 @@ export function capitalizeWords(str: string): string {
     )
     .join(" "); // Join the words back into a single string
 }
+
+export function isAlphabetOnly(str: string): boolean {
+  const pattern = /^[A-Za-z ]+$/;
+  return pattern.test(str);
+}
