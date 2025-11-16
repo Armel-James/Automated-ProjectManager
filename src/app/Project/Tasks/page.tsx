@@ -250,12 +250,12 @@ function TasksView({ projectId }: TasksViewProps) {
             //console.log("old data: ", currentTaskToEdit.current);
           }}
           actionBegin={(args) => {
-            console.log(
-              "Args.requestType:",
-              args.requestType,
-              " toItem",
-              toItemDependency
-            );
+            // console.log(
+            //   "Args.requestType:",
+            //   args.requestType,
+            //   " toItem",
+            //   toItemDependency
+            // );
             if (args.requestType === "beforeOpenEditDialog") {
               currentTaskToEdit.current = {
                 ...args.rowData,
@@ -278,7 +278,7 @@ function TasksView({ projectId }: TasksViewProps) {
               setTimeout(() => {
                 setToItemDependency(null);
               }, 0);
-              console.log("saved");
+              //console.log("saved");
             }
 
             if (args.requestType === "beforeOpenEditDialog") {
@@ -353,7 +353,7 @@ function TasksView({ projectId }: TasksViewProps) {
 
                 if (newTaskIndex < 0) return;
 
-                console.log(newTaskIndex);
+                //console.log(newTaskIndex);
 
                 childrenOfParent[newTaskIndex].docId = taskIndex;
                 for (
@@ -374,13 +374,13 @@ function TasksView({ projectId }: TasksViewProps) {
                   name: "New Task",
                   progress: 0,
                 });
-                console.log({
-                  ...childrenOfParent[newTaskIndex],
-                  order: newTaskIndex,
-                  name: "New Task",
-                  progress: 0,
-                  notes: "",
-                });
+                // console.log({
+                //   ...childrenOfParent[newTaskIndex],
+                //   order: newTaskIndex,
+                //   name: "New Task",
+                //   progress: 0,
+                //   notes: "",
+                // });
               });
             } else if (args.requestType === "save") {
               if (!currentTaskToEdit?.current) {
@@ -437,7 +437,7 @@ function TasksView({ projectId }: TasksViewProps) {
                     )
                 : 0;
               updateCriticalTasks(projectId, d);
-              console.log("Total Critical Duration: ", d);
+              //console.log("Total Critical Duration: ", d);
 
               // updateTask(
               //   projectId,

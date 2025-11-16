@@ -164,6 +164,8 @@ export default function Reports({ projectId }: ReportsManagementProps) {
 
   function handleExport() {
     const input = reportRef.current;
+    console.log(reportRef.current?.scrollHeight); // Logs the full height of the content
+    console.log(reportRef.current?.scrollWidth); // Logs the visible height of the content
     if (!input) return;
 
     // Hide the export button before capturing
@@ -174,20 +176,22 @@ export default function Reports({ projectId }: ReportsManagementProps) {
       scale: 2, // improves quality
       useCORS: true,
       backgroundColor: "#ffffff",
+      height: input.scrollHeight,
+      width: input.scrollWidth,
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
+      const pdf = new jsPDF("l", "mm", [297, 210]); // Adjusted to A4 landscape size
 
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgWidth = 297; // A4 width in mm (landscape)
+      const pageHeight = 210; // A4 height in mm (landscape)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width; // Adjusted to maintain aspect ratio
       let heightLeft = imgHeight;
       let position = 0;
 
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
+      while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
@@ -212,7 +216,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   return (
     <div
       ref={reportRef}
-      className="w-full px-8 py-6 space-y-8 bg-white rounded-2xl shadow-lg border border-gray-100"
+      className="w-full px-8 py-6 h-full space-y-8 bg-white rounded-2xl shadow-lg border border-gray-100"
     >
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
