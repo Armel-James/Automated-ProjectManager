@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import Modal from "../../../components/modal";
-import type { Member } from "../../../types/member";
+import type { Member, ProjectMember } from "../../../types/member";
 import type { Team } from "../../../types/team";
 import {
   addMember,
   deleteMember,
   updateMember,
 } from "../../../services/firestore/members";
-import { listenToProjectMembers } from "../../../services/firestore/members";
+import { listenToMembers } from "../../../services/firestore/members";
 import {
   addTeam,
   deleteTeam,
@@ -17,6 +17,10 @@ import {
 import { useAuth } from "../../../services/firebase/auth-context";
 import type { Employee } from "../../../types/employee";
 import { listenToEmployees } from "../../../services/firestore/employees";
+import {
+  addProjectMember,
+  listenToProjectMembers,
+} from "../../../services/firestore/projectmember";
 
 interface MembersManagementProps {
   projectId: string;
@@ -35,6 +39,16 @@ export default function MembersManagement({
 
   const { user } = useAuth();
 
+  // Project members from projectmembers collection
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+
+  // Global employees for adding new members
+  const [globalEmployees, setGlobalEmployees] = useState<Employee[]>([]);
+  const [filteredGlobalEmployees, setFilteredGlobalEmployees] = useState<
+    Employee[]
+  >([]);
+
   useEffect(() => {
     if (!user) return;
     const unsubscribeTeams = onTeamsSnapshot(projectId, setTeams);
@@ -42,11 +56,16 @@ export default function MembersManagement({
       user?.uid || "",
       setGlobalEmployees
     );
-    const unsubscribeMember = listenToProjectMembers(projectId, setMembers);
+    const unsubscribeMember = listenToMembers(projectId, setMembers);
+    const unsubscribeProjectMembers = listenToProjectMembers(
+      projectId,
+      setProjectMembers
+    );
     return () => {
       unsubscribeMember();
       unsubscribeTeams();
       unsubscribeGlobalEmployees();
+      unsubscribeProjectMembers();
     };
   }, [projectId, user]);
 
@@ -58,23 +77,15 @@ export default function MembersManagement({
   );
   const [employeeSearchValue, setEmployeeSearchValue] = useState("");
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const [newFullName, setNewFullName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newRole, setnewRole] = useState<string[]>([]);
-  const [newPhoneNumber, setnewPhoneNumber] = useState("");
-  const [newMemberTeamName, setNewMemberTeamName] = useState<string>("None");
-  const [newLevel, setNewLevel] = useState<"Leader" | "Member">("Member");
-  const [members, setMembers] = useState<Member[]>([]);
-
-  const [globalEmployees, setGlobalEmployees] = useState<Employee[]>([]);
-  const [filteredGlobalEmployees, setFilteredGlobalEmployees] = useState<
-    Employee[]
-  >([]);
+  // For adding new members
   const [chosenEmployee, setChosenEmployee] = useState<Employee | null>(null);
-
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [roleFields, setRoleFields] = useState([""]); // Roles
   const [newTeamName, setNewTeamName] = useState<string>("");
+  const [newMemberTeamId, setNewMemberTeamId] = useState<string>("None");
+  const [newLevel, setNewLevel] = useState<"Leader" | "Member">("Member");
+
+  // Teams
+  const [teams, setTeams] = useState<Team[]>([]);
 
   // Team edit state
   const [editTeamId, setEditTeamId] = useState<string | null>(null);
@@ -111,65 +122,79 @@ export default function MembersManagement({
   }
 
   const handleAddMember = () => {
+    // Validations
+
+    if (chosenEmployee === null) {
+      alert("Please select an employee.");
+      return;
+    }
+
+    if (newMemberTeamId === "None") {
+      alert("Please select a team for the member.");
+      return;
+    }
+
+    const employeeEmail = globalEmployees.find(
+      (employee) => employee.id === chosenEmployee.id
+    )?.email;
+
+    const isRolesValid = roleFields.every((role) => role.trim() !== "");
+    const isRolesUnique =
+      new Set(roleFields.map((role) => role.trim())).size === roleFields.length;
+    const isRolesAlphabetOnly = roleFields.every((role) =>
+      /^[A-Za-z ]+$/.test(role)
+    );
+
+    if (!isRolesValid) {
+      alert("Please fill in all role fields.");
+      return;
+    }
+
+    if (!isRolesUnique) {
+      alert("Role fields must be unique.");
+      return;
+    }
+
+    if (!isRolesAlphabetOnly) {
+      alert("Role fields must contain only alphabetic characters and spaces.");
+      return;
+    }
+
+    if (!employeeEmail) {
+      alert("Selected employee does not have a valid email.");
+      return;
+    }
+
     // inputFields contains the roles
-    console.log(chosenEmployee);
-    console.log(inputFields);
-    return;
-    if (
-      !newFullName.trim() ||
-      !newEmail.trim() ||
-      !newRole.length ||
-      !newPhoneNumber.trim() ||
-      !newLevel.trim() ||
-      newMemberTeamName.trim() === "None"
-    ) {
-      alert("Please fill in all fields.");
-      return;
-    }
+    // console.log("###################");
+    // console.log(chosenEmployee);
+    // console.log(newMemberTeamId);
+    // console.log(newLevel);
+    // console.log(inputFields);
 
-    if (newPhoneNumber)
-      if (!emailRegex.test(newEmail)) {
-        alert("Please enter a valid email address.");
-        return;
-      }
+    // // Check for duplicate employeeID
+    // if (members.some((m) => m.employeeId === chosenEmployee.id)) {
+    //   alert("This employee is already a member.");
+    //   return;
+    // }
 
-    if (user && user.email === newEmail) {
-      alert("You can't add your own email here.");
-      return;
-    }
-
-    if (members.some((m) => m.emailAddress === newEmail)) {
-      alert("This email is already a member.");
-      return;
-    }
-
-    addMember(projectId, {
-      name: newFullName,
-      emailAddress: newEmail,
-      role: newRole.join(", "),
-      phoneNumber: newPhoneNumber,
-      teamName: newTeamName === "None" ? undefined : newMemberTeamName,
+    const newMember: ProjectMember = {
+      employeeId: chosenEmployee.id,
+      teamId: newMemberTeamId,
+      roles: roleFields,
       level: newLevel,
-    } as Omit<Member, "id">).then((id) => {
-      setMembers([
-        ...members,
-        {
-          id: id,
-          name: newFullName,
-          emailAddress: newEmail,
-          role: newRole.join(", "),
-          phoneNumber: newPhoneNumber,
-          level: newLevel,
-          teamName:
-            newMemberTeamName === "None" ? undefined : newMemberTeamName,
-        },
-      ]);
-      setNewFullName("");
-      setNewEmail("");
-      setnewRole([]);
-      setnewPhoneNumber("");
-    });
+      emailAddress: employeeEmail,
+    };
+
+    setRoleFields([]);
+    setChosenEmployee(null);
+    setNewMemberTeamId("None");
+    setNewLevel("Member");
+
+    addProjectMember(newMember, projectId);
     setIsModalOpen(false);
+
+    return;
   };
 
   const [searchType, setSearchType] = useState<
@@ -296,30 +321,30 @@ export default function MembersManagement({
   }
 
   // New function to handle member selection from search results
-  function handleSelectMember(member: Member) {
-    setEditMember(member);
-    setIsModalOpen(true);
-  }
+  // function handleSelectMember(member: Member) {
+  //   setEditMember(member);
+  //   setIsModalOpen(true);
+  // }
 
-  const [inputFields, setInputFields] = useState([""]); // Initial state with one empty input
+  // Initial state with one empty input
 
   const handleAddField = () => {
-    setInputFields([...inputFields, ""]); // Add a new empty string to the array
+    setRoleFields([...roleFields, ""]); // Add a new empty string to the array
   };
 
   const handleRemoveField = (index: number) => {
-    const updatedFields = inputFields.filter((_, i) => i !== index);
-    setInputFields(updatedFields);
+    const updatedFields = roleFields.filter((_, i) => i !== index);
+    setRoleFields(updatedFields);
   };
 
   const handleChange = (
     index: number,
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const updatedFields = inputFields.map((field, i) =>
+    const updatedFields = roleFields.map((field, i) =>
       i === index ? event.target.value : field
     );
-    setInputFields(updatedFields);
+    setRoleFields(updatedFields);
   };
 
   return (
@@ -368,12 +393,12 @@ export default function MembersManagement({
           isViewOnly={false}
           onClose={() => {
             setIsModalOpen(false);
-            setNewFullName("");
-            setNewEmail("");
-            setnewRole([]); // Updated to handle multiple roles
-            setnewPhoneNumber("");
-            setNewMemberTeamName("None");
+            setNewMemberTeamId("None");
             setNewLevel("Member");
+            setChosenEmployee(null);
+            setEmployeeSearchValue("");
+            setEmployeeSearchType("id");
+            setRoleFields([""]);
           }}
           onConfirm={handleAddMember}
         >
@@ -439,12 +464,12 @@ export default function MembersManagement({
                   Team
                   <select
                     className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm bg-white shadow-sm"
-                    value={newMemberTeamName}
-                    onChange={(e) => setNewMemberTeamName(e.target.value)}
+                    value={newMemberTeamId}
+                    onChange={(e) => setNewMemberTeamId(e.target.value)}
                   >
                     <option value="None">None</option>
                     {teams.map((team) => (
-                      <option key={team.id} value={team.name}>
+                      <option key={team.id} value={team.id}>
                         {team.name}
                       </option>
                     ))}
@@ -472,7 +497,7 @@ export default function MembersManagement({
                 Roles
                 <div className="flex flex-col gap-2 mt-2">
                   <div className="flex flex-col gap-2 h-[130px] overflow-y-auto">
-                    {inputFields.map((field, index) => (
+                    {roleFields.map((field, index) => (
                       <div
                         key={index}
                         className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm shadow-sm"
