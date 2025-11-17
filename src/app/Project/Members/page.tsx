@@ -71,6 +71,7 @@ export default function MembersManagement({
   const [filteredGlobalEmployees, setFilteredGlobalEmployees] = useState<
     Employee[]
   >([]);
+  const [chosenEmployee, setChosenEmployee] = useState<Employee | null>(null);
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [newTeamName, setNewTeamName] = useState<string>("");
@@ -110,6 +111,8 @@ export default function MembersManagement({
   }
 
   const handleAddMember = () => {
+    // inputFields contains the roles
+    console.log(chosenEmployee);
     console.log(inputFields);
     return;
     if (
@@ -399,7 +402,17 @@ export default function MembersManagement({
             <select
               size={5}
               className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm bg-white shadow-sm"
+              value={chosenEmployee ? chosenEmployee.id : ""}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                const selectedEmployee =
+                  globalEmployees.find((emp) => emp.id === selectedId) || null;
+                setChosenEmployee(selectedEmployee);
+              }}
             >
+              <option value="" disabled>
+                Select an employee
+              </option>
               {employeeSearchValue === "" ? (
                 globalEmployees.map((employee) => (
                   <option key={employee.id} value={employee.id}>

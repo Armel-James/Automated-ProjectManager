@@ -236,10 +236,6 @@ export function onGanttMembersSnapshot(
       .map((doc) => {
         const memberData = { ...doc.data(), id: doc.id } as Member;
 
-        if (memberData.level === "Leader") {
-          return null;
-        }
-
         const ganttFormattedMember: GanttMember = {
           id: memberData.id,
           name: memberData.name,

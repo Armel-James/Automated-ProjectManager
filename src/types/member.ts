@@ -9,6 +9,13 @@ export interface Member {
   unit?: number; // Optional unit property
 }
 
+export interface ProjectMember {
+  employeeId: string;
+  roles: string[];
+  teamId: string;
+  level: "Leader" | "Member";
+}
+
 export interface GanttMember {
   id: string;
   name: string;
