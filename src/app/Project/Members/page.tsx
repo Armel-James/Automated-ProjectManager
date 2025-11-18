@@ -69,6 +69,11 @@ export default function MembersManagement({
     };
   }, [projectId, user]);
 
+  useEffect(() => {
+    // TODO: Map Project Members with Employee details
+    console.log("Project Members:", projectMembers);
+  }, [projectMembers]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editMember, setEditMember] = useState<Partial<Member>>({});
@@ -197,31 +202,12 @@ export default function MembersManagement({
     return;
   };
 
-  const [searchType, setSearchType] = useState<
-    "name" | "email" | "role" | "team" | "level"
-  >("name");
+  const [searchType, setSearchType] = useState<"name">("name");
   const [searchValue, setSearchValue] = useState("");
 
   const filteredMembers = members.filter((m) => {
     if (!searchValue) return true;
-    if (searchType === "name")
-      return m.name.toLowerCase().includes(searchValue.toLowerCase());
-    if (searchType === "email")
-      return m.emailAddress.toLowerCase().includes(searchValue.toLowerCase());
-    if (searchType === "role")
-      return m.role.toLowerCase().includes(searchValue.toLowerCase());
-    if (searchType === "team") {
-      return (
-        teams
-          .find((t) => t.name === m.teamName)
-          ?.name.toLowerCase()
-          .includes(searchValue.toLowerCase()) || false
-      );
-    }
-    if (searchType === "level") {
-      return m.level.toLowerCase().includes(searchValue.toLowerCase());
-    }
-    return true;
+    return m.name.toLowerCase().includes(searchValue.toLowerCase());
   });
 
   function handleEdit(idx: number, m: Member) {
@@ -357,21 +343,10 @@ export default function MembersManagement({
         {/* Filters & Actions Bar */}
         <div className="w-full flex flex-col md:flex-row md:items-center gap-4 mb-5 bg-[#f7fafd] rounded-2xl border border-gray-200 shadow p-6">
           <div className="flex gap-2 w-full md:w-auto">
-            <select
-              className="border border-gray-300 text-sm rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-[#0f6cbd]"
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as any)}
-            >
-              <option value="name">Name</option>
-              <option value="email">Email</option>
-              <option value="role">Role</option>
-              <option value="team">Team</option>
-              <option value="level">Level</option>
-            </select>
             <input
               className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm"
               type="text"
-              placeholder={`Search by ${searchType}`}
+              placeholder={`Search by name`}
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
