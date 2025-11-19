@@ -7,7 +7,7 @@ import {
 } from "../../../services/firestore/tasks";
 import { addDays, daysLeft, formatDate } from "../../../util/date";
 import type { GanttMember, Member } from "../../../types/member";
-import { listenToProjectMembers } from "../../../services/firestore/members";
+import { listenToProjectMembers } from "../../../services/firestore/projectmember";
 
 interface TaskDetailsPageProps {
   task: Task;

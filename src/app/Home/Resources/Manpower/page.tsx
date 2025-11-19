@@ -71,9 +71,9 @@ const Manpower = () => {
 
     if (
       employee.email.trim() &&
-      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(employee.email)
+      !/^[a-zA-Z0-9._%+-]+@gmail+\.[a-zA-Z]{2,}$/.test(employee.email)
     ) {
-      errors.email = "Invalid email format.";
+      errors.email = "Invalid email format. (juandelacruz@gmail.com) Must be google email";
     }
     return errors;
   };
@@ -114,12 +114,17 @@ const Manpower = () => {
   }
 
   const handleAddEmployee = () => {
+    
     const validationErrors = validateEmployee(newEmployee);
-
+    
     if (Object.keys(validationErrors).length > 0) {
+      
       setErrors(validationErrors);
+      
       return;
     }
+
+    console.log("here ")
 
     setErrors({
       id: "",
@@ -178,11 +183,11 @@ const Manpower = () => {
       return;
     }
 
-    // if (currentUser) {
-    //   createEmployee(currentUser.uid, capitalizedNamedEmployee);
-    // }
+    if (currentUser) {
+      createEmployee(currentUser.uid, capitalizedNamedEmployee);
+    }
 
-    // setIsModalOpen(false);
+    setIsModalOpen(false);
   };
 
   const openModal = () => {
