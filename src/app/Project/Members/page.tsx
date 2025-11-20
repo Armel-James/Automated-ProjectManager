@@ -20,6 +20,7 @@ import { listenToEmployees } from "../../../services/firestore/employees";
 import {
   addProjectMember,
   listenToProjectMembers,
+  updateProjectMember,
 } from "../../../services/firestore/projectmember";
 
 interface MembersManagementProps {
@@ -49,6 +50,18 @@ export default function MembersManagement({
     Employee[]
   >([]);
 
+  // Teams
+  const [teams, setTeams] = useState<Team[]>([]);
+
+  // Formatted Project Members with Employee details
+  const [formattedProjectMembers, setFormattedProjectMembers] = useState<
+    Member[]
+  >([]);
+  const [currentEditingEmployee, setCurrentEditingEmployee] =
+    useState<Employee | null>(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     const unsubscribeTeams = onTeamsSnapshot(projectId, setTeams);
@@ -70,9 +83,26 @@ export default function MembersManagement({
   }, [projectId, user]);
 
   useEffect(() => {
-    // TODO: Map Project Members with Employee details
-    console.log("Project Members:", projectMembers);
-  }, [projectMembers]);
+    setFormattedProjectMembers(
+      projectMembers.map((pm) => {
+        const employee = globalEmployees.find(
+          (emp) => emp.id === pm.employeeId
+        );
+        return {
+          id: pm.employeeId,
+          name: employee
+            ? `${employee.firstName} ${employee.lastName}`
+            : "Unknown",
+          roles: pm.roles,
+          emailAddress: employee ? employee.email : "Unknown",
+          phoneNumber: employee ? employee.phoneNumber : "Unknown",
+          teamName: teams.find((team) => team.id === pm.teamId)?.name || "None",
+          level: pm.level,
+          unit: 100,
+        };
+      })
+    );
+  }, [projectMembers, globalEmployees, teams]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editIdx, setEditIdx] = useState<number | null>(null);
@@ -89,12 +119,27 @@ export default function MembersManagement({
   const [newMemberTeamId, setNewMemberTeamId] = useState<string>("None");
   const [newLevel, setNewLevel] = useState<"Leader" | "Member">("Member");
 
-  // Teams
-  const [teams, setTeams] = useState<Team[]>([]);
-
   // Team edit state
   const [editTeamId, setEditTeamId] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState<string>("");
+
+  function handleEditProjectMember(projectMember: ProjectMember) {
+    setIsEditing(true);
+    setIsModalOpen(true);
+    setNewMemberTeamId(projectMember.teamId);
+    setNewLevel(projectMember.level);
+
+    const employeeToBeEdited = globalEmployees.find(
+      (emp) => emp.id === projectMember.employeeId
+    );
+
+    setCurrentEditingEmployee(employeeToBeEdited || null);
+
+    setChosenEmployee(employeeToBeEdited || null);
+    setEmployeeSearchValue("");
+    setEmployeeSearchType("id");
+    setRoleFields(projectMember.roles);
+  }
 
   useEffect(() => {
     handleFilterGlobalEmployees();
@@ -183,7 +228,7 @@ export default function MembersManagement({
     //   return;
     // }
 
-    const newMember: ProjectMember = {
+    const modalMember: ProjectMember = {
       employeeId: chosenEmployee.id,
       teamId: newMemberTeamId,
       roles: roleFields,
@@ -191,12 +236,22 @@ export default function MembersManagement({
       emailAddress: employeeEmail,
     };
 
+    if (!isEditing) addProjectMember(modalMember, projectId);
+    else
+      updateProjectMember(projectId, modalMember.employeeId, {
+        roles: modalMember.roles,
+        teamId: modalMember.teamId,
+        level: modalMember.level,
+      });
+
     setRoleFields([]);
     setChosenEmployee(null);
     setNewMemberTeamId("None");
     setNewLevel("Member");
+    if (isEditing) {
+      setIsEditing(false);
+    }
 
-    addProjectMember(newMember, projectId);
     setIsModalOpen(false);
 
     return;
@@ -205,7 +260,7 @@ export default function MembersManagement({
   const [searchType, setSearchType] = useState<"name">("name");
   const [searchValue, setSearchValue] = useState("");
 
-  const filteredMembers = members.filter((m) => {
+  const filteredMembers = formattedProjectMembers.filter((m) => {
     if (!searchValue) return true;
     return m.name.toLowerCase().includes(searchValue.toLowerCase());
   });
@@ -364,7 +419,7 @@ export default function MembersManagement({
         <Modal
           open={isModalOpen}
           setIsOpen={setIsModalOpen}
-          title="Add New Member"
+          title={isEditing ? "Edit Member" : "Add New Member"}
           isViewOnly={false}
           onClose={() => {
             setIsModalOpen(false);
@@ -374,63 +429,84 @@ export default function MembersManagement({
             setEmployeeSearchValue("");
             setEmployeeSearchType("id");
             setRoleFields([""]);
+
+            if (isEditing) {
+              setIsEditing(false);
+            }
           }}
           onConfirm={handleAddMember}
         >
           <div className="flex flex-col gap-4 w-xl">
             {/* Search Input */}
-            <div className="flex gap-2 items-center">
-              <select
-                className="border border-gray-300 rounded-lg p-2"
-                value={employeeSearchType}
-                onChange={(e) =>
-                  setEmployeeSearchType(e.target.value as "id" | "name")
-                }
-              >
-                <option value="id">Search by ID</option>
-                <option value="name">Search by Name</option>
-              </select>
-              <input
-                type="text"
-                placeholder={`Search by ${employeeSearchType}`}
-                className="border border-gray-300 rounded-lg p-2 w-full"
-                value={employeeSearchValue}
-                onChange={(e) => setEmployeeSearchValue(e.target.value)}
-              />
-            </div>
-
-            <select
-              size={5}
-              className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm bg-white shadow-sm"
-              value={chosenEmployee ? chosenEmployee.id : ""}
-              onChange={(e) => {
-                const selectedId = e.target.value;
-                const selectedEmployee =
-                  globalEmployees.find((emp) => emp.id === selectedId) || null;
-                setChosenEmployee(selectedEmployee);
-              }}
-            >
-              <option value="" disabled>
-                Select an employee
-              </option>
-              {employeeSearchValue === "" ? (
-                globalEmployees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.lastName}, {employee.firstName} - (
-                    {`${employee.id}`})
+            {!isEditing && (
+              <div className="flex gap-2 items-center">
+                <select
+                  className="border border-gray-300 rounded-lg p-2"
+                  value={employeeSearchType}
+                  onChange={(e) =>
+                    setEmployeeSearchType(e.target.value as "id" | "name")
+                  }
+                >
+                  <option value="id">Search by ID</option>
+                  <option value="name">Search by Name</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder={`Search by ${employeeSearchType}`}
+                  className="border border-gray-300 rounded-lg p-2 w-full"
+                  value={employeeSearchValue}
+                  onChange={(e) => setEmployeeSearchValue(e.target.value)}
+                />
+              </div>
+            )}
+            {!isEditing ? (
+              <div>
+                <select
+                  size={5}
+                  className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0f6cbd] text-sm bg-white shadow-sm"
+                  disabled={isEditing}
+                  value={chosenEmployee ? chosenEmployee.id : ""}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    const selectedEmployee =
+                      globalEmployees.find((emp) => emp.id === selectedId) ||
+                      null;
+                    setChosenEmployee(selectedEmployee);
+                  }}
+                >
+                  <option value="" disabled>
+                    Select an employee
                   </option>
-                ))
-              ) : filteredGlobalEmployees.length === 0 ? (
-                <option disabled>No employees found.</option>
-              ) : (
-                filteredGlobalEmployees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.lastName}, {employee.firstName} - (
-                    {`${employee.id}`})
-                  </option>
-                ))
-              )}
-            </select>
+                  {employeeSearchValue === "" ? (
+                    globalEmployees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.lastName}, {employee.firstName} - (
+                        {`${employee.id}`})
+                      </option>
+                    ))
+                  ) : filteredGlobalEmployees.length === 0 ? (
+                    <option disabled>No employees found.</option>
+                  ) : (
+                    filteredGlobalEmployees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.lastName}, {employee.firstName} - (
+                        {`${employee.id}`})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            ) : (
+              <div className="text-sm font-medium text-gray-700 bg-[#f7fafd] border border-gray-300 rounded-lg p-3 shadow-sm">
+                Currently Editing:{" "}
+                <span className="text-[#0f6cbd] font-semibold">
+                  {currentEditingEmployee?.firstName}{" "}
+                  {currentEditingEmployee?.lastName} {"("}
+                  {currentEditingEmployee?.id}
+                  {")"}
+                </span>
+              </div>
+            )}
 
             {/* Team and Level Select Side by Side */}
             <div className="flex flex-col gap-2">
@@ -516,18 +592,15 @@ export default function MembersManagement({
                   <th className="py-3 px-4 text-left font-semibold">Name</th>
                   <th className="py-3 px-4 text-left font-semibold">Email</th>
                   <th className="py-3 px-4 text-left font-semibold">Phone</th>
-                  <th className="py-3 px-4 text-center font-semibold">Role</th>
+                  <th className="py-3 px-4 text-center font-semibold">Roles</th>
                   <th className="py-3 px-4 text-center font-semibold">Team</th>
                   <th className="py-3 px-4 text-center font-semibold">Level</th>
-                  <th className="py-3 px-4 text-center font-semibold">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredMembers.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-400">
+                    <td colSpan={6} className="py-8 text-center text-gray-400">
                       No members found.
                     </td>
                   </tr>
@@ -537,7 +610,10 @@ export default function MembersManagement({
                     key={m.id}
                     className={`transition-colors ${
                       idx % 2 === 0 ? "bg-white" : "bg-[#f7fafd]"
-                    } hover:bg-[#e6f0fa]`}
+                    } hover:bg-[#e6f0fa] cursor-pointer`}
+                    onClick={() => {
+                      handleEditProjectMember(projectMembers[idx]);
+                    }}
                   >
                     {editIdx === idx ? (
                       <>
@@ -575,16 +651,49 @@ export default function MembersManagement({
                           />
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <input
-                            className="border rounded px-2 py-1 text-sm w-24"
-                            value={editMember.role || ""}
-                            onChange={(e) =>
-                              handleEditChange("role", e.target.value)
-                            }
-                          />
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {editMember.roles?.map((role, roleIdx) => (
+                              <div
+                                key={roleIdx}
+                                className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-lg px-3 py-1 text-sm shadow-sm"
+                              >
+                                <span>{role}</span>
+                                {/* <button
+                                  type="button"
+                                  className="text-red-500 hover:text-red-700"
+                                  onClick={() =>
+                                    handleEditChange(
+                                      "roles",
+                                      editMember.roles?.filter(
+                                        (_, i) => i !== roleIdx
+                                      )
+                                    )
+                                  }
+                                >
+                                  ✕
+                                </button> */}
+                              </div>
+                            ))}
+                            {/* <input
+                              type="text"
+                              placeholder="Add role"
+                              className="border border-gray-300 rounded-lg p-2 text-sm"
+                              onKeyDown={(e) => {
+                                if (
+                                  e.key === "Enter" &&
+                                  e.currentTarget.value.trim() !== ""
+                                ) {
+                                  handleEditChange("roles", [
+                                    ...(editMember.roles || []),
+                                    e.currentTarget.value.trim(),
+                                  ]);
+                                  e.currentTarget.value = "";
+                                }
+                              }}
+                            /> */}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          {/* Team select placeholder */}
                           <select
                             className="border rounded px-2 py-1 text-sm w-24"
                             value={editMember.teamName || "None"}
@@ -612,22 +721,6 @@ export default function MembersManagement({
                             <option value={"Member"}>Member</option>
                           </select>
                         </td>
-                        <td className="py-3 px-4 flex gap-2 justify-center items-center">
-                          <button
-                            className="bg-[#0f6cbd] text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-[#155a8a] shadow-sm"
-                            title="Save"
-                            onClick={() => handleEditSave(idx)}
-                          >
-                            ✔
-                          </button>
-                          <button
-                            className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-[#e6f0fa] shadow-sm"
-                            title="Cancel"
-                            onClick={handleEditCancel}
-                          >
-                            ✕
-                          </button>
-                        </td>
                       </>
                     ) : (
                       <>
@@ -644,17 +737,16 @@ export default function MembersManagement({
                           {m.phoneNumber || "-"}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wide shadow-sm ${
-                              m.role === "Admin"
-                                ? "bg-[#e6f0fa] text-[#0f6cbd]"
-                                : m.role === "Editor"
-                                ? "bg-[#eaf7e6] text-[#0f6cbd]"
-                                : "bg-gray-200 text-gray-700"
-                            }`}
-                          >
-                            {m.role}
-                          </span>
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {m.roles?.map((role, roleIdx) => (
+                              <span
+                                key={roleIdx}
+                                className="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold shadow-sm"
+                              >
+                                {role}
+                              </span>
+                            ))}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span className="inline-block bg-[#e6f0fa] text-[#0f6cbd] px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
@@ -665,33 +757,6 @@ export default function MembersManagement({
                           <span className="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
                             {m.level}
                           </span>
-                        </td>
-                        <td className="py-3 px-4 flex gap-2 justify-center items-center">
-                          <button
-                            className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-[#e6f0fa] shadow-sm"
-                            title="Edit"
-                            onClick={() => handleEdit(idx, m)}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            className="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-red-200 shadow-sm"
-                            title="Remove"
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  "Are you sure you want to remove this member?"
-                                )
-                              ) {
-                                deleteMember(projectId, m.id, m.emailAddress);
-                                setMembers((prev) =>
-                                  prev.filter((_, i) => i !== idx)
-                                );
-                              }
-                            }}
-                          >
-                            🗑
-                          </button>
                         </td>
                       </>
                     )}
@@ -763,12 +828,12 @@ export default function MembersManagement({
                   key={team.id}
                   className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-[#b3d1f7]"
                 >
-                  <input
+                  {/* <input
                     className="border border-[#b3d1f7] rounded-lg px-2 py-1 text-sm font-semibold text-[#0f6cbd] flex-1 mr-2 bg-white"
                     value={editTeamName}
                     onChange={(e) => setEditTeamName(e.target.value)}
                     autoFocus
-                  />
+                  /> */}
                   <div className="flex gap-2">
                     <button
                       className="bg-[#0f6cbd] text-white px-2 py-1 rounded-lg text-xs font-semibold hover:bg-[#155a8a] shadow"

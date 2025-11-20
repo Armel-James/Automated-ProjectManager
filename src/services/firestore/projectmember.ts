@@ -65,3 +65,18 @@ export function listenToProjectMembers(
     callback(members);
   });
 }
+
+export async function updateProjectMember(
+  projectId: string,
+  employeeId: string,
+  updatedData: Partial<ProjectMember>
+): Promise<void> {
+  const memberRef = doc(db, `projects/${projectId}/projectmembers`, employeeId);
+  console.log("Updating project member:", employeeId, updatedData);
+  try {
+    await updateDoc(memberRef, updatedData);
+  } catch (e) {
+    console.error("Error updating project member:", e);
+    throw e;
+  }
+}

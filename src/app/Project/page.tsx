@@ -48,13 +48,21 @@ function ProjectView() {
   }, [id]);
 
   const renderContent = () => {
-    if (activeTab === "tasks-tab") {
+    if (!project) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <span className="text-gray-500">Loading project...</span>
+        </div>
+      );
+    }
+
+    if (activeTab === "tasks-tab" && project != null) {
       if (project) return <TasksView projectId={project?.id} />;
-    } else if (activeTab === "members-tab") {
+    } else if (activeTab === "members-tab" && project != undefined) {
       if (project) return <MembersManagement projectId={project?.id} />;
-    } else if (activeTab === "reports-tab") {
+    } else if (activeTab === "reports-tab" && project != null) {
       if (project) return <Reports projectId={project?.id} />;
-    } else if (activeTab === "settings-tab") {
+    } else if (activeTab === "settings-tab" && project != null) {
       if (project) return <ProjectSettings projectId={project?.id} />;
     }
   };

@@ -1,7 +1,8 @@
+// Formatted member that is used for ui
 export interface Member {
   id: string;
   name: string;
-  role: string;
+  roles: string[];
   emailAddress: string;
   phoneNumber: string;
   teamName?: string;
@@ -14,6 +15,7 @@ export interface ProjectMember {
   roles: string[];
   teamId: string;
   level: "Leader" | "Member";
+  emailAddress: string;
 }
 
 export interface GanttMember {

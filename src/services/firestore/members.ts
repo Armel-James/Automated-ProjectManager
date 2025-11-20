@@ -240,7 +240,7 @@ export function onGanttMembersSnapshot(
           id: memberData.id,
           name: memberData.name,
           unit: memberData.unit || 100,
-          role: memberData.role,
+          role: memberData.roles.join(", "),
           teamName: memberData.teamName,
         };
 
