@@ -115,7 +115,7 @@ export function getActiveTasks(
   projectId: string,
   callback: (tasks: number) => void
 ) {
-  const todayDate = new Date().toDateString();
+  const todayDate = new Date().valueOf();
 
   const tasksRef = collection(db, "projects", projectId, "tasks");
   let a = 0;
@@ -124,26 +124,19 @@ export function getActiveTasks(
       const endDate = new Date(doc.data().startDate.toDate().toDateString());
       endDate.setDate(
         endDate.getDate() +
-          (doc.data().duration != 0 ? doc.data().duration - 1 : 0)
+          // (doc.data().duration != 0 ? doc.data().duration - 1 : 0)
+          doc.data().duration
       );
-      const endDateStr = endDate.toDateString();
+      const endDateStr = endDate.valueOf();
       if (
         !snapshot.empty &&
-        todayDate >= endDate.toDateString() &&
+        todayDate >= doc.data().startDate.toDate().valueOf() &&
         todayDate <= endDateStr
       ) {
         a++;
       } else {
         callback(0);
       }
-      console.log(
-        doc.data().id,
-        doc.data().name,
-        endDate.toDateString(),
-        endDateStr,
-        todayDate >= endDate.toDateString() && todayDate <= endDateStr,
-        a
-      );
     });
     callback(a);
   });

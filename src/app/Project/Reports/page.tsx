@@ -164,44 +164,45 @@ export default function Reports({ projectId }: ReportsManagementProps) {
 
   function handleExport() {
     const input = reportRef.current;
-    console.log(reportRef.current?.scrollHeight); // Logs the full height of the content
-    console.log(reportRef.current?.scrollWidth); // Logs the visible height of the content
     if (!input) return;
 
-    // Hide the export button before capturing
-    const exportButton = input.querySelector("#export-btn") as HTMLElement;
-    if (exportButton) exportButton.style.display = "none";
+    input.classList.add("a4-portrait"); // force A4 size
+
+    const exportBtn = document.getElementById("export-btn");
+    if (exportBtn) exportBtn.style.display = "none";
 
     html2canvas(input, {
-      scale: 2, // improves quality
+      scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
-      height: input.scrollHeight,
-      width: input.scrollWidth,
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("l", "mm", [297, 210]); // Adjusted to A4 landscape size
 
-      const imgWidth = 297; // A4 width in mm (landscape)
-      const pageHeight = 210; // A4 height in mm (landscape)
-      const imgHeight = (canvas.height * imgWidth) / canvas.width; // Adjusted to maintain aspect ratio
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
       let heightLeft = imgHeight;
       let position = 0;
 
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      heightLeft -= pdfHeight;
 
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        heightLeft -= pdfHeight;
       }
 
-      // Restore export button after capture
-      if (exportButton) exportButton.style.display = "block";
-
       pdf.save(`${project?.name || "project-report"}.pdf`);
+
+      input.classList.remove("a4-portrait");
+      if (exportBtn) exportBtn.style.display = "block";
     });
   }
 
