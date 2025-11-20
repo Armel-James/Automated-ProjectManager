@@ -58,11 +58,23 @@ function ProjectView() {
 
     if (activeTab === "tasks-tab" && project != null) {
       if (project) return <TasksView projectId={project?.id} />;
-    } else if (activeTab === "members-tab" && project != undefined) {
+    } else if (
+      activeTab === "members-tab" &&
+      project != undefined &&
+      project.id != null
+    ) {
       if (project) return <MembersManagement projectId={project?.id} />;
-    } else if (activeTab === "reports-tab" && project != null) {
+    } else if (
+      activeTab === "reports-tab" &&
+      project != null &&
+      project.id != null
+    ) {
       if (project) return <Reports projectId={project?.id} />;
-    } else if (activeTab === "settings-tab" && project != null) {
+    } else if (
+      activeTab === "settings-tab" &&
+      project != null &&
+      project.id != null
+    ) {
       if (project) return <ProjectSettings projectId={project?.id} />;
     }
   };
@@ -106,7 +118,9 @@ function ProjectView() {
           </div>
           {/* Right-side Icons */}
           <div className="flex items-center justify-end gap-3 pr-4">
-            {project && <NotifDropdown projectId={project.id} />}
+            {project && project.id != null && (
+              <NotifDropdown projectId={project.id} />
+            )}
             <NavDropdown
               actions={{
                 Logout: () => {
