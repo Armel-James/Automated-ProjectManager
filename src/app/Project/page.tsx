@@ -19,6 +19,8 @@ import MembersManagement from "./Members/page";
 import ProjectSettings from "./Settings/page";
 import Reports from "./Reports/page";
 import NotifDropdown from "../../components/notif-dropdown";
+import OtherResourcesPage from "./OtherResources/page";
+import toolsImage from "../../assets/images/tools.png";
 
 function ProjectView() {
   const [activeTab, setActiveTab] = useState("tasks-tab");
@@ -76,6 +78,12 @@ function ProjectView() {
       project.id != null
     ) {
       if (project) return <ProjectSettings projectId={project?.id} />;
+    } else if (
+      activeTab === "other-resources-tab" &&
+      project != null &&
+      project.id != null
+    ) {
+      if (project) return <OtherResourcesPage />;
     }
   };
 
@@ -169,6 +177,21 @@ function ProjectView() {
           onClick={() => setActiveTab("members-tab")}
         >
           <img src={membersIcon} className="h-7 w-7" />
+        </button>
+
+        {/* Other Resources Tab Button */}
+        <button
+          className={`flex justify-center items-center my-1 rounded-xl transition-all duration-150 p-1.5 mx-auto w-12 h-12 shadow-sm
+            ${
+              activeTab === "other-resources-tab"
+                ? "bg-[#e6f0fa] border-2 border-[#0f6cbd] shadow-md"
+                : "hover:bg-[#f4f8fb] border border-transparent"
+            }
+          `}
+          aria-label="Other Resources"
+          onClick={() => setActiveTab("other-resources-tab")}
+        >
+          <img src={toolsImage} className="h-7 w-7" />
         </button>
 
         {/* Reports Tab Button */}

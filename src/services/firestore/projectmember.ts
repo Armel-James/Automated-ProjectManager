@@ -33,7 +33,7 @@ export async function addProjectMember(
       `projects/${projectId}/projectmembers`,
       projectMember.employeeId
     );
-    await setDoc(memberRef, projectMember);
+    await setDoc(memberRef, { ...projectMember, resourceType: "manpower" });
 
     getProjectById(projectId).then((project) => {
       addNotification(projectId, {
@@ -79,4 +79,12 @@ export async function updateProjectMember(
     console.error("Error updating project member:", e);
     throw e;
   }
+}
+
+export async function deleteProjectMember(
+  projectId: string,
+  employeeId: string
+) {
+  const memberRef = doc(db, `projects/${projectId}/projectmembers`, employeeId);
+  return deleteDoc(memberRef);
 }

@@ -19,6 +19,7 @@ import type { Employee } from "../../../types/employee";
 import { listenToEmployees } from "../../../services/firestore/employees";
 import {
   addProjectMember,
+  deleteProjectMember,
   listenToProjectMembers,
   updateProjectMember,
 } from "../../../services/firestore/projectmember";
@@ -344,22 +345,22 @@ export default function MembersManagement({
   }
 
   // New state for search results
-  const [searchResults, setSearchResults] = useState<Member[]>([]);
+  // const [searchResults, setSearchResults] = useState<Member[]>([]);
 
   // New function to handle member search
-  function handleSearch(value: string) {
-    if (!value) {
-      setSearchResults([]);
-      return;
-    }
+  // function handleSearch(value: string) {
+  //   if (!value) {
+  //     setSearchResults([]);
+  //     return;
+  //   }
 
-    const results = members.filter(
-      (m) =>
-        m.emailAddress.toLowerCase().includes(value.toLowerCase()) ||
-        m.id.toLowerCase().includes(value.toLowerCase())
-    );
-    setSearchResults(results);
-  }
+  //   const results = members.filter(
+  //     (m) =>
+  //       m.emailAddress.toLowerCase().includes(value.toLowerCase()) ||
+  //       m.id.toLowerCase().includes(value.toLowerCase())
+  //   );
+  //   setSearchResults(results);
+  // }
 
   // New function to handle member selection from search results
   // function handleSelectMember(member: Member) {
@@ -581,6 +582,33 @@ export default function MembersManagement({
                 </div>
               </label>
             </div>
+
+            {/* Delete Button */}
+            {isEditing && (
+              <button
+                onClick={() => {
+                  if (currentEditingEmployee) {
+                    deleteProjectMember(projectId, currentEditingEmployee.id);
+                    setIsModalOpen(false);
+                    setIsEditing(false);
+                    setCurrentEditingEmployee(null);
+                    setNewMemberTeamId("None");
+                    setNewLevel("Member");
+                    setChosenEmployee(null);
+                    setEmployeeSearchValue("");
+                    setEmployeeSearchType("id");
+                    setRoleFields([""]);
+
+                    if (isEditing) {
+                      setIsEditing(false);
+                    }
+                  }
+                }}
+                className="bg-red-600 text-white font-semibold rounded-lg px-4 py-2 hover:bg-red-800 text-sm transition shadow"
+              >
+                Delete Member
+              </button>
+            )}
           </div>
         </Modal>
 
