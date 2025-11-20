@@ -83,7 +83,7 @@ function ProjectView() {
       project != null &&
       project.id != null
     ) {
-      if (project) return <OtherResourcesPage />;
+      if (project) return <OtherResourcesPage projectId={project?.id} />;
     }
   };
 
