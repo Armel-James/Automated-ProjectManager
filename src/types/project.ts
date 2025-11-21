@@ -12,4 +12,5 @@ export interface Project {
   updatedAt: Date;
   taskIndex: number;
   projectRoles?: string[];
+  budget?: number;
 }

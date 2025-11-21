@@ -1,5 +1,6 @@
 import { Timestamp } from "firebase/firestore";
 import type { GanttMember } from "./member";
+import type { GanttResource } from "./resource";
 
 export interface Task {
   id: string;
@@ -10,9 +11,10 @@ export interface Task {
   duration: number;
   parentId?: string | null;
   dependency: string | null;
-  assignedMembers?: GanttMember[] | null;
+  assignedResource?: GanttResource[] | null;
   createdAt?: Date | Timestamp;
   updatedAt?: Date | Timestamp;
+  totalCost: number;
   order: number;
   docId: number;
 }
@@ -27,7 +29,8 @@ export const CoreTaskFields: any = {
   order: "order",
   notes: "notes",
   parentId: "parentId",
-  assignedMembers: "assignedMembers",
+  assignedResource: "assignedResource",
+  totalCost: "totalCost",
 } as const;
 
 export type CoreTaskFieldsType =

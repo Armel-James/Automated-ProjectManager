@@ -72,7 +72,7 @@ export default function Home() {
                 }`}
                 onClick={() => setActiveTab("Resources")}
               >
-                Resources
+                Manpower
               </button>
             </div>
 

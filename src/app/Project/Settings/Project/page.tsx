@@ -24,6 +24,8 @@ export default function ProjectSpecificSettings({
   const [deleting, setDeleting] = useState(false);
   const [projectName, setProjectName] = useState(""); // Add state for project name
   const [editingName, setEditingName] = useState(false);
+  const [budget, setBudget] = useState<number | "">("");
+  const [editingBudget, setEditingBudget] = useState(false);
   const navigate = useNavigate();
   const currentUser = getAuth().currentUser;
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +39,18 @@ export default function ProjectSpecificSettings({
       }
     }
 
+    getProjectById(projectId).then((project) => {
+      if (project) {
+        setBudget(project.budget || "");
+      }
+    });
+
     fetchProjectName();
   }, [projectId]);
+
+  useEffect(() => {
+    console.log("Budget updated:", budget);
+  }, [budget]);
 
   async function handleReuseProject() {
     setIsLoading(true);
@@ -102,29 +114,42 @@ export default function ProjectSpecificSettings({
     setEditingName(false);
   }
 
+  const handleBudgetChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setBudget(value === "" ? "" : parseFloat(value));
+  };
+
+  const handleBudgetSave = async () => {
+    if (budget !== "" && budget >= 0) {
+      await updateProject(projectId, { budget });
+      setEditingBudget(false);
+    } else {
+      console.error("Invalid budget value");
+    }
+  };
+
   return (
     <div className="max-w-2xl">
       <h2 className="text-2xl font-semibold text-[#0f6cbd] mb-6">Project</h2>
       {/* Editable Project Name */}
       <div className="mb-8 flex items-center gap-3">
-        {" "}
         Project Name:
         {editingName ? (
           <>
             <input
-              className="border border-[#b3d1f7] rounded-lg px-3 py-2 text-lg font-semibold text-[#0f6cbd] focus:outline-none focus:ring-2 focus:ring-[#0f6cbd]/30"
+              className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               autoFocus
             />
             <button
-              className="bg-[#0f6cbd] text-white px-3 py-1 rounded font-semibold text-sm hover:bg-[#155a8a]"
+              className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
               onClick={handleNameSave}
             >
               Save
             </button>
             <button
-              className="bg-gray-100 text-gray-700 px-3 py-1 rounded font-semibold text-sm hover:bg-[#e6f0fa]"
+              className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300"
               onClick={() => setEditingName(false)}
             >
               Cancel
@@ -132,17 +157,63 @@ export default function ProjectSpecificSettings({
           </>
         ) : (
           <>
-            <span className="text-lg font-semibold text-[#0f6cbd]">
+            <span className="text-base text-gray-800">
               {projectName || "Untitled Project"}
             </span>
             <button
-              className="bg-[#e6f0fa] text-[#0f6cbd] px-3 py-1 rounded font-semibold text-sm hover:bg-[#b3d1f7]"
+              className="bg-gray-200 text-blue-500 px-3 py-1 rounded text-sm hover:bg-gray-300"
               onClick={() => setEditingName(true)}
             >
               Edit
             </button>
           </>
         )}
+      </div>
+
+      {/* Budget Section */}
+      <div className="mb-8">
+        <h3 className="text-base font-medium text-gray-800 mb-2">
+          Budget (PHP)
+        </h3>
+        <div className="flex items-center gap-3">
+          {editingBudget ? (
+            <>
+              <input
+                type="number"
+                value={budget}
+                onChange={handleBudgetChange}
+                min="0"
+                step="0.01"
+                placeholder="Enter project budget"
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <button
+                className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                onClick={handleBudgetSave}
+              >
+                Save
+              </button>
+              <button
+                className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300"
+                onClick={() => setEditingBudget(false)}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-base text-gray-800">
+                {budget !== "" ? `₱${budget.toFixed(2)}` : "No Budget Set"}
+              </span>
+              <button
+                className="bg-gray-200 text-blue-500 px-3 py-1 rounded text-sm hover:bg-gray-300"
+                onClick={() => setEditingBudget(true)}
+              >
+                Edit
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Reuse Project Section */}

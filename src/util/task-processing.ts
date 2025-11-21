@@ -26,10 +26,14 @@ export function changedTaskFields(oldTask: Task, newTask: Task) {
     changes.dependency = newTask.dependency;
   }
 
+  if (newTask.totalCost != oldTask.totalCost) {
+    changes.totalCost = newTask.totalCost;
+  }
+
   if (
-    newTask.assignedMembers?.length === oldTask.assignedMembers?.length &&
-    newTask.assignedMembers?.every(
-      (val, index) => val === oldTask.assignedMembers?.[index]
+    newTask.assignedResource?.length === oldTask.assignedResource?.length &&
+    newTask.assignedResource?.every(
+      (val, index) => val === oldTask.assignedResource?.[index]
     )
   ) {
     console.log("No changes in assigned members");

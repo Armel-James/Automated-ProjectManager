@@ -1,4 +1,5 @@
 import "../../../styles/frappe-gantt.css";
+import { TaskbarTemplate } from "./taskbarTemplate";
 import {
   GanttComponent,
   ContextMenu,
@@ -31,7 +32,7 @@ import {
   updateTask,
   updateTaskOrder,
 } from "../../../services/firestore/tasks";
-import type { GanttMember, Member } from "../../../types/member";
+import type { GanttMember, Member, ProjectMember } from "../../../types/member";
 
 import { changedTaskFields } from "../../../util/task-processing";
 import {
@@ -40,13 +41,20 @@ import {
 } from "../../../services/firestore/members";
 import sampleTasks from "./sampleData";
 import UploadModal from "../../../components/UploadModal/upload-modal";
-import task from "../../../components/task";
+import type { GanttResource } from "../../../types/resource";
+import type { OtherResource } from "../../../types/other-resource";
+import { listenToProjectMembers } from "../../../services/firestore/projectmember";
+import { listenToOtherResources } from "../../../services/firestore/otherresource";
+import { listenToEmployees } from "../../../services/firestore/employees";
+import type { Employee } from "../../../types/employee";
+import { getAuth } from "firebase/auth";
 
 interface TasksViewProps {
   projectId?: string;
 }
 
 function TasksView({ projectId }: TasksViewProps) {
+  const currentUser = getAuth().currentUser;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [toItemDependency, setToItemDependency] = useState<any>(null);
   const ganttRef = useRef<GanttComponent>(null);
@@ -55,8 +63,19 @@ function TasksView({ projectId }: TasksViewProps) {
   const [members, setMembers] = useState<GanttMember[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [projectMembers, setProjectMembers] = useState<Member[]>([]);
-  const [tasksLoaded, setTasksLoaded] = useState(false);
-  const [membersLoaded, setMembersLoaded] = useState(false);
+
+  // Resources
+  const [formattedResources, setFormattedResources] = useState<GanttResource[]>(
+    []
+  );
+  const [membersCollection, setMembersCollection] = useState<ProjectMember[]>(
+    []
+  );
+  const [otherResourcesCollection, setOtherResourcesCollection] = useState<
+    OtherResource[]
+  >([]);
+  const [globalEmployees, setGlobalEmployees] = useState<Employee[]>([]);
+
   const editOptions: EditSettingsModel = {
     allowAdding: true,
     allowEditing: true,
@@ -66,6 +85,38 @@ function TasksView({ projectId }: TasksViewProps) {
   };
 
   const today = new Date();
+
+  useEffect(() => {
+    // console.log("Members Collection:", membersCollection);
+    // console.log("Other Resources Collection:", otherResourcesCollection);
+    // console.log("Formatted Resources:", formattedResources);
+    // console.log("Global Employees:", globalEmployees);
+
+    const formattedMembers: GanttResource[] = membersCollection.map(
+      (member) => {
+        const employee = globalEmployees.find(
+          (emp) => emp.id === member.employeeId
+        );
+
+        return {
+          id: member.employeeId,
+          name: employee?.firstName + " " + employee?.lastName || "",
+          group: "Manpower",
+          unit: 100,
+        };
+      }
+    );
+
+    const formattedOtherResources: GanttResource[] =
+      otherResourcesCollection.map((resource) => ({
+        id: resource.id,
+        name: resource.name,
+        group: resource.category,
+        unit: 100,
+      }));
+
+    setFormattedResources([...formattedMembers, ...formattedOtherResources]);
+  }, [membersCollection, otherResourcesCollection, globalEmployees]);
 
   function handleToolbarClick(args: any) {
     if (!ganttRef.current) {
@@ -86,8 +137,6 @@ function TasksView({ projectId }: TasksViewProps) {
       ganttRef.current.enableItems(["SubmissionsButton"], true); // Enable the button
     }
 
-    //setSelectedRow(args.data);
-
     if (args.data.length > 1) setSelectedRow(null);
     else setSelectedRow(args.data);
   };
@@ -99,32 +148,38 @@ function TasksView({ projectId }: TasksViewProps) {
   };
 
   useEffect(() => {
-    if (!projectId) return;
-    const unsubscribeTasks = listenToTasks(projectId, setTasks, setTasksLoaded);
-    const unsubscribeMembers = onGanttMembersSnapshot(
+    if (!projectId || !currentUser) return;
+    const unsubscribeTasks = listenToTasks(projectId, setTasks);
+    const unsubscribeToEmployees = listenToEmployees(
+      currentUser.uid,
+      setGlobalEmployees
+    );
+    const unsubscribeToProjectMembers = listenToProjectMembers(
       projectId,
-      setMembers,
-      setMembersLoaded
+      setMembersCollection
+    );
+    const unsubscribeToOtherResources = listenToOtherResources(
+      projectId,
+      setOtherResourcesCollection
     );
 
+    const unsubscribeMembers = onGanttMembersSnapshot(projectId, setMembers);
     const unsubscribeProjectMembers = onProjectMembersSnapshot(
       projectId,
       (projectMembers) => {
         setProjectMembers(projectMembers);
-      },
-      setMembersLoaded
+      }
     );
 
     return () => {
       unsubscribeMembers();
       unsubscribeTasks();
       unsubscribeProjectMembers();
+      unsubscribeToProjectMembers();
+      unsubscribeToOtherResources();
+      unsubscribeToEmployees();
     };
   }, [projectId]);
-
-  useEffect(() => {
-    //console.log("Tasks loaded:", tasks);
-  }, [tasks]);
 
   const taskFields: any = {
     id: "id",
@@ -136,13 +191,14 @@ function TasksView({ projectId }: TasksViewProps) {
     dependency: "dependency",
     notes: "notes",
     order: "order",
-    resourceInfo: "assignedMembers",
+    resourceInfo: "assignedResource",
+    totalCost: "totalCost",
   };
 
   const resourceFields = {
     id: "id",
     name: "name",
-    group: "teamName",
+    group: "group",
   };
 
   const toolbarOptions = [
@@ -157,7 +213,10 @@ function TasksView({ projectId }: TasksViewProps) {
   ];
 
   const editDialogFields: EditDialogFieldSettingsModel[] = [
-    { type: "General" },
+    {
+      type: "General",
+      fields: ["id", "name", "startDate", "duration", "progress", "totalCost"],
+    },
     { type: "Dependency" },
     { type: "Resources" },
     { type: "Notes" },
@@ -181,12 +240,11 @@ function TasksView({ projectId }: TasksViewProps) {
     // handleGetCriticalTasks(),
 
     <div className="w-full h-[700px] max-h-[500px] min-w-[500px] max-w-[1820px] border-gray-300">
-      {projectId && (
+      {projectId && formattedResources.length > 0 && (
         <GanttComponent
           ref={ganttRef}
           key={projectId}
-          enablePersistence={true}
-          resources={members}
+          resources={formattedResources}
           resourceFields={resourceFields}
           rowSelected={rowSelected}
           rowDeselected={rowDeselected}
@@ -204,6 +262,7 @@ function TasksView({ projectId }: TasksViewProps) {
             { field: "name", headerText: "Task Name", width: 200 },
             { field: "startDate", headerText: "Start Date", width: 100 },
             { field: "duration", headerText: "Duration", width: 100 },
+            { field: "totalCost", headerText: "Total Cost", width: 100 },
           ]}
           taskFields={taskFields}
           dataSource={tasks}
@@ -213,8 +272,9 @@ function TasksView({ projectId }: TasksViewProps) {
           width="100%"
           gridLines={"Horizontal"}
           allowSelection={true}
-          editSettings={editOptions}
+          editSettings={editOptions} // Apply the edit settings with the custom template
           toolbar={toolbarOptions}
+          taskbarTemplate={TaskbarTemplate}
           enableCriticalPath={true}
           toolbarClick={handleToolbarClick}
           eventMarkers={[
@@ -246,20 +306,100 @@ function TasksView({ projectId }: TasksViewProps) {
               args.cancel = true; // Prevent progress bar editing
             }
           }}
-          taskbarEdited={(args) => {
-            //console.log("old data: ", currentTaskToEdit.current);
-          }}
+          taskbarEdited={() => {}}
           actionBegin={(args) => {
-            // console.log(
-            //   "Args.requestType:",
-            //   args.requestType,
-            //   " toItem",
-            //   toItemDependency
-            // );
             if (args.requestType === "beforeOpenEditDialog") {
               currentTaskToEdit.current = {
                 ...args.rowData,
               };
+
+              setTimeout(() => {
+                const inputElement = document.querySelector(
+                  'input[name="totalCost"]'
+                );
+
+                if (inputElement) {
+                  inputElement.setAttribute("type", "number");
+                  inputElement.setAttribute("min", "0");
+                  inputElement.setAttribute("step", "0.01");
+
+                  // inputElement.addEventListener(
+                  //   "keydown",
+                  //   (event: KeyboardEvent) => {
+                  //     if (event.key === "e") {
+                  //       event.preventDefault();
+                  //     }
+                  //   }
+                  // );
+                }
+              }, 0.2);
+            }
+            if (args.rowData && args.rowData.progress > 1) {
+              setTimeout(() => {
+                // Disable specific fields in the dialog
+                const dialog = args.dialogModel.content;
+
+                if (!dialog) return;
+                const forms = document.querySelectorAll(".e-edit-form-column");
+                forms.forEach((formElement: any) => {
+                  formElement.setAttribute("disabled", "true");
+                  formElement.style.pointerEvents = "none"; // Prevent interaction
+                  formElement.style.opacity = "0.7"; // Add visual indication
+                });
+
+                const observer = new MutationObserver((mutations) => {
+                  mutations.forEach((mutation) => {
+                    if (mutation.type === "childList") {
+                      const dependencyAddDelElements =
+                        dialog.querySelectorAll(".e-tbar-btn");
+
+                      const notesElement = dialog.querySelector(
+                        ".e-content.e-lib.e-keyboard"
+                      );
+
+                      const resourceInputs = dialog.querySelectorAll(
+                        "input[type='checkbox']"
+                      );
+
+                      const resourceInputsWrappers = dialog.querySelectorAll(
+                        ".e-checkbox-wrapper"
+                      );
+
+                      if (args.rowData.progress === 100) {
+                        resourceInputsWrappers.forEach((wrapper: any) => {
+                          wrapper.setAttribute("disabled", "true");
+                          wrapper.style.pointerEvents = "none"; // Prevent interaction
+                          wrapper.style.opacity = "0.7"; // Add visual indication
+                        });
+                      }
+
+                      for (
+                        let i = 0;
+                        i < dependencyAddDelElements.length;
+                        i++
+                      ) {
+                        const element: any = dependencyAddDelElements[i];
+                        element.setAttribute("disabled", "true");
+                        element.style.pointerEvents = "none"; // Prevent interaction
+                        element.style.opacity = "0.7"; // Add visual indication
+                      }
+
+                      if (notesElement) {
+                        notesElement.setAttribute("disabled", "true");
+                        notesElement.style.pointerEvents = "none"; // Prevent interaction
+                        notesElement.style.opacity = "0.7"; // Add visual indication
+                      }
+
+                      if (notesElement && dependencyAddDelElements) {
+                        observer.disconnect(); // Stop observing once the element is found
+                      }
+                    }
+                  });
+                });
+
+                // Start observing the dialog for changes
+                observer.observe(dialog, { childList: true, subtree: true });
+              }, 0.2);
             }
 
             if (args.requestType === "taskbarediting") {
@@ -267,7 +407,6 @@ function TasksView({ projectId }: TasksViewProps) {
             }
 
             if (args.requestType === "ValidateDependency") {
-              //console.log("Validating dependency...", args);
               setToItemDependency(args.toItem);
             }
 
@@ -278,13 +417,12 @@ function TasksView({ projectId }: TasksViewProps) {
               setTimeout(() => {
                 setToItemDependency(null);
               }, 0);
-              //console.log("saved");
             }
 
             if (args.requestType === "beforeOpenEditDialog") {
-              if (args.rowData.progress > 0) {
-                args.cancel = true;
-              }
+              // if (args.rowData.progress > 0) {
+              //   args.cancel = true;
+              // }
             }
 
             if (args.requestType === "beforeOpenEditDialog") {
@@ -306,7 +444,6 @@ function TasksView({ projectId }: TasksViewProps) {
                 [spinDown, spinUp].forEach((el: any) => {
                   if (el) {
                     el.style.pointerEvents = "none";
-                    el.style.opacity = "0.5";
                   }
                 });
               }, 0);
@@ -316,7 +453,6 @@ function TasksView({ projectId }: TasksViewProps) {
             if (args.requestType === "add") {
               // Get parent id of new Task
               const parentId = args.data.taskData.parentId;
-              const newTaskId = args.data.taskData.id;
 
               getTaskIndex(projectId).then((taskIndex: number) => {
                 const newTask: Task = {
@@ -324,7 +460,7 @@ function TasksView({ projectId }: TasksViewProps) {
                   createdAt: new Date(),
                   updatedAt: new Date(),
                   docId: taskIndex,
-                  assignedMembers: [],
+                  assignedResource: [],
                 } as Task;
 
                 // For ordering purposes only
@@ -340,6 +476,7 @@ function TasksView({ projectId }: TasksViewProps) {
                     parentId: t.taskData?.parentId ?? null,
                     notes: t.taskData?.notes ?? "",
                     docId: t.taskData?.docId ?? "",
+                    totalCost: Number(t.taskData?.totalCost) ?? 0,
                   })) || [];
                 if (!allTasks) return;
 
@@ -352,8 +489,6 @@ function TasksView({ projectId }: TasksViewProps) {
                 );
 
                 if (newTaskIndex < 0) return;
-
-                //console.log(newTaskIndex);
 
                 childrenOfParent[newTaskIndex].docId = taskIndex;
                 for (
@@ -374,13 +509,6 @@ function TasksView({ projectId }: TasksViewProps) {
                   name: "New Task",
                   progress: 0,
                 });
-                // console.log({
-                //   ...childrenOfParent[newTaskIndex],
-                //   order: newTaskIndex,
-                //   name: "New Task",
-                //   progress: 0,
-                //   notes: "",
-                // });
               });
             } else if (args.requestType === "save") {
               if (!currentTaskToEdit?.current) {
@@ -389,7 +517,10 @@ function TasksView({ projectId }: TasksViewProps) {
 
               const newTask = {
                 ...args.data.taskData,
+                totalCost: Number(args.data.taskData.totalCost) || 0,
               } as any;
+
+              console.log("New Task Data:", newTask);
 
               const previousTaskState = {
                 docId: currentTaskToEdit?.current?.taskData.docId,
@@ -400,29 +531,34 @@ function TasksView({ projectId }: TasksViewProps) {
                 startDate: currentTaskToEdit?.current?.startDate,
                 name: currentTaskToEdit?.current?.name,
                 duration: currentTaskToEdit?.current?.duration,
+                totalCost: Number(currentTaskToEdit?.current?.totalCost) || 0,
               } as Task;
 
               const changes = changedTaskFields(previousTaskState, newTask);
               const docId = newTask.docId;
+
+              console.log("Changes Detected:", changes);
 
               if (!changes) return;
               Object.entries(changes).forEach(([key, value]) => {
                 updateTask(projectId, docId, key, value);
               });
 
+              //console.log("Updated Task:", newTask.assignedResource);
               // members changed in here
               updateTask(
                 projectId,
                 String(newTask.docId),
-                "assignedMembers",
-                newTask.assignedMembers?.map((m: GanttMember) => ({
+                "assignedResource",
+                newTask.assignedResource?.map((m: GanttResource) => ({
                   id: m.id,
                   unit: m.unit,
-                  teamName: m.teamName,
-                  role: projectMembers.find((mem) => mem.id === m.id)?.role,
+                  group: m.group,
+                  roles: membersCollection.find(
+                    (mem) => mem.employeeId === m.id
+                  )?.roles, // Corrected 'role' to 'roles'
                   name: m.name,
-                  emailAddress: projectMembers.find((mem) => mem.id === m.id)
-                    ?.emailAddress,
+                  email: globalEmployees.find((mem) => mem.id === m.id)?.email,
                 })) || []
               );
 
@@ -437,14 +573,6 @@ function TasksView({ projectId }: TasksViewProps) {
                     )
                 : 0;
               updateCriticalTasks(projectId, d);
-              //console.log("Total Critical Duration: ", d);
-
-              // updateTask(
-              //   projectId,
-              //   String(newTask.docId),
-              //   "unit",
-              //   newTask.assignedMembers?.unit
-              // );
 
               // Update units of members too
             } else if (args.requestType === "delete") {

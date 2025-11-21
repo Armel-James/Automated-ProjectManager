@@ -1,9 +1,9 @@
-interface OtherResource {
+export interface OtherResource {
   id: string;
-  details: string;
   name: string;
-  category: "Tool" | "Equipment" | "Material";
+  details: string;
+  category: "Tool" | "Equipment" | "Materials";
   quantity: number;
-  pricingType: "fixed" | "hourly";
-  price: number;
+  pricePerQuantity: number;
+  provider: string;
 }

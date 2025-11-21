@@ -27,12 +27,20 @@ import { addDays } from "../../../util/date";
 // import { CriticalPath } from "@syncfusion/ej2-gantt/src/gantt/actions/critical-path";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
+import type { OtherResource } from "../../../types/other-resource";
+import { listenToOtherResources } from "../../../services/firestore/otherresource";
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <div className="w-full bg-gray-200 rounded-full h-2">
     <div
-      className="bg-blue-500 h-2 rounded-full"
-      style={{ width: `${value}%` }}
+      className={`h-2 rounded-full ${
+        value > 100
+          ? "bg-red-500"
+          : value === 100
+          ? "bg-green-500"
+          : "bg-blue-500"
+      }`}
+      style={{ width: `${value > 100 ? 100 : value}%` }}
     ></div>
   </div>
 );
@@ -50,6 +58,9 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [taskWithoutMilestones, setTaskWithoutMilestones] = useState<Task[]>(
     []
   );
+  const [otherResourcesCollection, setOtherResourcesCollection] = useState<
+    OtherResource[]
+  >([]);
   const [project, setProject] = useState<Project | null>(null);
   const [overallProgress, setOverallProgress] = useState<number>(0);
   const [overdueRate, setOverDueRate] = useState<number>(0);
@@ -57,6 +68,7 @@ export default function Reports({ projectId }: ReportsManagementProps) {
   const [chartData, setChartData] = useState<{ name: string; tasks: number }[]>(
     []
   );
+  const [actualBudget, setActualBudget] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [get_ActiveTasks, setActiveTasks] = useState(0);
 
@@ -89,12 +101,18 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     });
 
     const unsubscribeTasks = listenToTasks(projectId, setTask);
+
+    const unsubscribeOtherResource = listenToOtherResources(
+      projectId,
+      setOtherResourcesCollection
+    );
     // Cleanup listener on unmount
     return () => {
       unsubscribe();
       unsubscribeTasks();
       unsubProjectEnd();
       unsubProjectStart();
+      unsubscribeOtherResource();
     };
   }, [projectId]);
 
@@ -103,6 +121,27 @@ export default function Reports({ projectId }: ReportsManagementProps) {
     setTaskWithoutMilestones(filteredTasks);
     setCurrentTime(new Date());
   }, [tasks]);
+
+  useEffect(() => {
+    if (project) {
+      const totalActualBudgetofOtherResources = otherResourcesCollection.reduce(
+        (total, resource) =>
+          total + resource.pricePerQuantity * resource.quantity,
+        0
+      );
+
+      const totalActualBudgetOfTasks = taskWithoutMilestones.reduce(
+        (total, task) => {
+          return total + (task.totalCost || 0);
+        },
+        0
+      );
+
+      setActualBudget(
+        totalActualBudgetofOtherResources + totalActualBudgetOfTasks
+      );
+    }
+  }, [otherResourcesCollection, project, tasks]);
 
   useEffect(() => {
     if (taskWithoutMilestones.length === 0) return;
@@ -270,7 +309,6 @@ export default function Reports({ projectId }: ReportsManagementProps) {
               {overdueRate.toFixed(2)}%
             </div>
           </div>
-          <div></div>
         </div>
       </div>
 
@@ -322,6 +360,35 @@ export default function Reports({ projectId }: ReportsManagementProps) {
             {(Number(get_ProjectEnd) - Number(get_ProjectStart)) / 86400000}
             <span className="text-base text-gray-500 ml-1">days</span>
           </span>
+        </div>
+
+        <div className="bg-gradient-to-br from-[#e6f0fa] to-white rounded-xl shadow border border-[#b3d1f7] p-5 flex flex-col items-start">
+          <span className="text-xs text-gray-500 mb-1 font-medium tracking-wide">
+            Budget Usage
+          </span>
+          <span
+            className={`text-3xl font-bold mb-2 ${
+              actualBudget > (project?.budget || 0)
+                ? "text-red-600"
+                : "text-[#0f6cbd]"
+            }`}
+          >
+            ₱{actualBudget.toFixed(2)}
+            <span className="text-base text-gray-500 ml-1">
+              {" of "}
+              {project != undefined && project.budget != undefined
+                ? `₱${project.budget.toFixed(2)}` || "Not set"
+                : "Not set"}
+            </span>
+          </span>
+          {actualBudget > (project?.budget || 0) && (
+            <span className="text-sm text-red-500 font-medium">
+              Warning: Budget exceeded!
+            </span>
+          )}
+          <ProgressBar
+            value={Number(actualBudget / (project?.budget || 1)) * 100}
+          />
         </div>
       </div>
 

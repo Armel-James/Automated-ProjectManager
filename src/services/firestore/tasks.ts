@@ -22,6 +22,8 @@ import type { GanttMember, Member } from "../../types/member";
 import { addNotification, notifyProjectOwner } from "./notifications";
 import { NotificationType } from "../../types/notification";
 import { getUserById } from "./user";
+import type { OtherResource } from "../../types/other-resource";
+import type { GanttResource } from "../../types/resource";
 
 export async function createTask(projectId: string, newTask: Task) {
   try {
@@ -201,7 +203,7 @@ export function listenToTaskByTeam(
         } as Task;
       })
       .filter((task) => {
-        return task.assignedMembers?.some((member) => {
+        return task.assignedResource?.some((member) => {
           const memberNow = member;
           return memberNow.teamName === teamName;
         });
@@ -226,7 +228,7 @@ export function listenToTasksByAssignedMember(
           docId: Number(doc.id),
           ...docData,
           startDate: docData.startDate?.toDate?.() || new Date(),
-          assignedMembers:
+          assignedResource:
             docData.assignedMembers?.map((id: string) => ({
               id,
             })) || [],
@@ -234,7 +236,7 @@ export function listenToTasksByAssignedMember(
       })
       .filter((task) => {
         //console.log("Checking task:", task.assignedMembers?.[0].id.id);
-        return task.assignedMembers?.some((member) => {
+        return task.assignedResource?.some((member) => {
           //console.log("Comparing member:", member.id.id, "with", memberId);
           // make sure to fix this in the future with proper typing
           const memberNow: any = member;
@@ -264,7 +266,7 @@ export async function deleteTask(
     type: NotificationType.TaskDeleted,
     isMemberSpecific: true,
     targetMembers:
-      task?.assignedMembers
+      task?.assignedResource
         ?.map(
           (member) =>
             members.find(
@@ -293,6 +295,7 @@ export async function updateTask(
   field: CoreTaskFieldsType,
   value: any
 ) {
+  console.log("Updating field:", field, "with value:", value);
   switch (field) {
     case CoreTaskFields.name:
       await updateTaskName(projectId, taskId, value);
@@ -318,11 +321,15 @@ export async function updateTask(
     case CoreTaskFields.parentId:
       await updateTaskParentId(projectId, taskId, value);
       break;
-    case CoreTaskFields.assignedMembers:
-      await updateTaskMembers(projectId, taskId, value);
+    case CoreTaskFields.assignedResource:
+      await updateTaskResource(projectId, taskId, value);
       break;
     case CoreTaskFields.critical:
       await updateCriticalTasks(projectId, value);
+      break;
+    case CoreTaskFields.totalCost:
+      console.log("Updating total cost:", value);
+      await updateTotalCost(projectId, taskId, value);
       break;
     default:
       console.log("Unknown field received:", field);
@@ -426,34 +433,62 @@ export async function updateTaskOrder(
   });
 }
 
-export async function updateTaskMembers(
+export async function updateTotalCost(
   projectId: string,
   taskId: string,
-  assignedMembers: Member[]
+  totalCost: number
 ) {
   const docRef = doc(db, "projects", projectId, "tasks", String(taskId));
   await updateDoc(docRef, {
-    assignedMembers: assignedMembers.map((member) => ({
-      id: member.id,
-      teamName: member.teamName,
-      role: member.role,
-      unit: member.unit,
-    })),
+    totalCost: totalCost,
+  });
+}
+
+export async function updateTaskResource(
+  projectId: string,
+  taskId: string,
+  assignedResource: GanttResource[]
+) {
+  const docRef = doc(db, "projects", projectId, "tasks", String(taskId));
+
+  console.log("Updating task resources:", assignedResource);
+
+  const formattedResources = assignedResource.map((resource) => {
+    const resourceData: any = {
+      id: resource.id,
+      name: resource.name,
+      group: resource.group,
+      unit: resource.unit,
+    };
+
+    if (resource.roles) {
+      resourceData.roles = resource.roles;
+    }
+
+    if (resource.email) {
+      resourceData.email = resource.email;
+    }
+
+    return resourceData;
   });
 
-  if (assignedMembers.length === 0) return;
-
-  const recipients = assignedMembers
-    .map((member) => member.emailAddress)
-    .join(", ");
-
-  addNotification(projectId, {
-    projectId: projectId,
-    message: `The assigned members for task ID "${taskId}" have been updated. The new members are: ${recipients}.`,
-    type: NotificationType.TaskAssigned,
-    isMemberSpecific: true,
-    targetMembers: assignedMembers.map((member) => member.emailAddress),
+  await updateDoc(docRef, {
+    assignedResource: formattedResources,
   });
+
+  if (assignedResource.length === 0) return;
+
+  // const recipients = assignedResource
+  //   .map((member) => member.emailAddress)
+  //   .join(", ");
+
+  // addNotification(projectId, {
+  //   projectId: projectId,
+  //   message: `The assigned members for task ID "${taskId}" have been updated. The new members are: ${recipients}.`,
+  //   type: NotificationType.TaskAssigned,
+  //   isMemberSpecific: true,
+  //   targetMembers: assignedMembers.map((member) => member.emailAddress),
+  // });
 }
 
 export async function updateCriticalTasks(projectId: string, duration: number) {

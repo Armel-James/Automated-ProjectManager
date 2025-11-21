@@ -45,6 +45,15 @@ export async function createProject(project: Project, user: any) {
   }
 }
 
+export async function updateTotalCost(projectId: string, totalCost: number) {
+  if (projectId) {
+    await updateDoc(doc(db, "projects", projectId), {
+      totalCost: totalCost,
+      updatedAt: new Date(),
+    });
+  }
+}
+
 export async function createProjectFromTemplate(
   user: User,
   projectName: string,
@@ -86,6 +95,7 @@ export async function createProjectFromTemplate(
       parentId: null,
       assignedMembers: [],
       docId: 0,
+      totalCost: 0,
     }));
 
     createTasksInBulk(newProjectId as string, structuredTasks);
@@ -124,6 +134,7 @@ export async function getProjectById(projectId: string) {
       members: data.members ?? [],
       progress: data.progress,
       status: data.status,
+      budget: data.budget,
       expectedEndDate: (data.expectedEndDate as Timestamp).toDate(),
       createdAt: (data.createdAt as Timestamp).toDate(),
       updatedAt: (data.updatedAt as Timestamp).toDate(),

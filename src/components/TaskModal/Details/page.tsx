@@ -48,7 +48,7 @@ export default function TaskDetailsPage({
           );
         }
       }
-      console.log("Assigned Members: ", currentTask.assignedMembers);
+      console.log("Assigned Members: ", currentTask.assignedResource);
       //   currentTask.assignedMembers?.forEach((id, teamName, unit) => {
       //     console.log(id, teamName, unit);
       //   });
@@ -148,7 +148,7 @@ export default function TaskDetailsPage({
         <span className="font-medium text-gray-700">Assigned Members:</span>
         <ul className="text-gray-500 list-none pl-0">
           {members &&
-            currentTask?.assignedMembers?.map((member) => {
+            currentTask?.assignedResource?.map((member) => {
               const foundMember: GanttMember | undefined = members.find(
                 (m) => m.id === member.id
               ) as GanttMember | undefined;

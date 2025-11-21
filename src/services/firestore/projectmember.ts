@@ -2,19 +2,12 @@ import { db } from "../firebase/config";
 import {
   collection,
   doc,
-  addDoc,
   setDoc,
-  getDocs,
   updateDoc,
   deleteDoc,
   onSnapshot,
-  QuerySnapshot,
-  arrayUnion,
-  arrayRemove,
 } from "firebase/firestore";
-import type { DocumentData } from "firebase/firestore";
-import type { Member, ProjectMember } from "../../types/member";
-import type { GanttMember } from "../../types/member";
+import type { ProjectMember } from "../../types/member";
 import type { Notification } from "../../types/notification";
 import { addNotification } from "./notifications";
 import { NotificationType } from "../../types/notification";
@@ -72,7 +65,6 @@ export async function updateProjectMember(
   updatedData: Partial<ProjectMember>
 ): Promise<void> {
   const memberRef = doc(db, `projects/${projectId}/projectmembers`, employeeId);
-  console.log("Updating project member:", employeeId, updatedData);
   try {
     await updateDoc(memberRef, updatedData);
   } catch (e) {

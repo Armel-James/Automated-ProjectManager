@@ -73,7 +73,8 @@ const Manpower = () => {
       employee.email.trim() &&
       !/^[a-zA-Z0-9._%+-]+@gmail+\.[a-zA-Z]{2,}$/.test(employee.email)
     ) {
-      errors.email = "Invalid email format. (juandelacruz@gmail.com) Must be google email";
+      errors.email =
+        "Invalid email format. (juandelacruz@gmail.com) Must be google email";
     }
     return errors;
   };
@@ -114,17 +115,15 @@ const Manpower = () => {
   }
 
   const handleAddEmployee = () => {
-    
     const validationErrors = validateEmployee(newEmployee);
-    
+
     if (Object.keys(validationErrors).length > 0) {
-      
       setErrors(validationErrors);
-      
+
       return;
     }
 
-    console.log("here ")
+    console.log("here ");
 
     setErrors({
       id: "",
@@ -290,10 +289,6 @@ const Manpower = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold text-[#0f6cbd] mb-4">
-        Manpower Management
-      </h1>
-
       {/* Add Employee Button */}
       <button
         onClick={openModal}
