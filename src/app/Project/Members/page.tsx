@@ -237,7 +237,7 @@ export default function MembersManagement({
       emailAddress: employeeEmail,
     };
 
-    if (!isEditing) addProjectMember(modalMember, projectId);
+    if (!isEditing) addProjectMember(modalMember, projectId, employeeEmail);
     else
       updateProjectMember(projectId, modalMember.employeeId, {
         roles: modalMember.roles,
@@ -588,7 +588,11 @@ export default function MembersManagement({
               <button
                 onClick={() => {
                   if (currentEditingEmployee) {
-                    deleteProjectMember(projectId, currentEditingEmployee.id);
+                    deleteProjectMember(
+                      projectId,
+                      currentEditingEmployee.id,
+                      currentEditingEmployee.email
+                    );
                     setIsModalOpen(false);
                     setIsEditing(false);
                     setCurrentEditingEmployee(null);

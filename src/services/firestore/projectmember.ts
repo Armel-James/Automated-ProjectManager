@@ -6,19 +6,25 @@ import {
   updateDoc,
   deleteDoc,
   onSnapshot,
+  getDocs,
 } from "firebase/firestore";
 import type { ProjectMember } from "../../types/member";
 import type { Notification } from "../../types/notification";
 import { addNotification } from "./notifications";
 import { NotificationType } from "../../types/notification";
 import { getProjectById } from "./projects";
+import { updateProjectMembersField } from "./projects";
+import { getUserEmployees } from "./employees";
+import type { Employee } from "../../types/employee";
+import type { Project } from "../../types/project";
 
 const membersCollection = (projectId: string) =>
   collection(db, `projects/${projectId}/members`);
 
 export async function addProjectMember(
   projectMember: ProjectMember,
-  projectId: string
+  projectId: string,
+  employeeEmail: string
 ): Promise<string> {
   try {
     const memberRef = doc(
@@ -36,6 +42,8 @@ export async function addProjectMember(
         isMemberSpecific: true,
         targetMembers: [projectMember.emailAddress],
       } as Notification);
+
+      updateProjectMembersField(projectId, "add", employeeEmail);
     });
 
     return memberRef.id;
@@ -75,8 +83,38 @@ export async function updateProjectMember(
 
 export async function deleteProjectMember(
   projectId: string,
-  employeeId: string
+  employeeId: string,
+  employeeEmail: string
 ) {
   const memberRef = doc(db, `projects/${projectId}/projectmembers`, employeeId);
+
+  updateProjectMembersField(projectId, "remove", "", employeeEmail);
+
   return deleteDoc(memberRef);
+}
+
+export async function getProjectMembers(projectId: string) {
+  const membersRef = collection(db, `projects/${projectId}/projectmembers`);
+
+  const employeesSnapshot = await getDocs(membersRef);
+
+  // Extract and return the JSON data
+  const members = employeesSnapshot.docs.map((doc) => ({
+    ...doc.data(), // Spread the document data
+  }));
+
+  return members as ProjectMember[]; // Return the array of member objects
+}
+
+export async function getMyMemberDataOnProject(
+  projectId: string,
+  myEmail: string
+): Promise<ProjectMember | null> {
+  const projectMembers = await getProjectMembers(projectId);
+
+  const myProjectMemberData = projectMembers.find((member: any) => {
+    return member.emailAddress.toLowerCase() === myEmail.toLowerCase();
+  });
+
+  return myProjectMemberData || null;
 }

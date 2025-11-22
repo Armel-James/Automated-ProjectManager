@@ -2,6 +2,8 @@ import { db } from "../firebase/config";
 import type { Project } from "../../types/project";
 import {
   Timestamp,
+  arrayRemove,
+  arrayUnion,
   deleteDoc,
   doc,
   getDoc,
@@ -295,4 +297,49 @@ export function onProjectSnapshot(
       callback(null);
     }
   });
+}
+
+// Updates the members field of a project document directly for lookup
+export async function updateProjectMembersField(
+  projectId: string,
+  method: "add" | "remove" | "update",
+  newMemberEmailAddress: string,
+  oldMemberEmailAddress?: string
+) {
+  try {
+    if (method === "update") {
+      console.log(
+        "Updating member email from",
+        oldMemberEmailAddress,
+        "to",
+        newMemberEmailAddress
+      );
+      if (!oldMemberEmailAddress || !newMemberEmailAddress) {
+        throw new Error(
+          "Both old and new member email addresses must be provided for updates."
+        );
+      }
+
+      updateDoc(doc(db, "projects", projectId), {
+        members: arrayRemove(oldMemberEmailAddress),
+      }).then(() => {
+        updateDoc(doc(db, "projects", projectId), {
+          members: arrayUnion(newMemberEmailAddress),
+          updatedAt: new Date(),
+        });
+      });
+      return;
+    } else {
+      updateDoc(doc(db, "projects", projectId), {
+        members:
+          method === "add"
+            ? arrayUnion(newMemberEmailAddress)
+            : arrayRemove(oldMemberEmailAddress),
+        updatedAt: new Date(),
+      });
+    }
+  } catch (e) {
+    console.error("Error updating project members:", e);
+    throw e;
+  }
 }

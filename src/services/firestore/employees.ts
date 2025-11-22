@@ -6,6 +6,7 @@ import {
   onSnapshot,
   deleteDoc,
   updateDoc,
+  getDocs,
 } from "firebase/firestore";
 import type { Employee } from "../../types/employee";
 
@@ -31,6 +32,10 @@ export function listenToEmployees(
   });
 }
 
+export function getEmployeesCollectionRef(userId: string) {
+  return collection(db, "users", userId, "employees");
+}
+
 export function deleteEmployee(userId: string, employeeId: string) {
   const employeeRef = doc(db, "users", userId, "employees", employeeId);
   return deleteDoc(employeeRef);
@@ -45,4 +50,15 @@ export function updateEmployee(userId: string, employee: Employee) {
     phoneNumber: employee.phoneNumber,
     email: employee.email,
   });
+}
+
+export async function getUserEmployees(userId: string) {
+  const colRef = collection(db, "users", String(userId), "employees");
+  const snapshot = await getDocs(colRef);
+
+  const employees = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  return employees; // Return the array of employee objects
 }

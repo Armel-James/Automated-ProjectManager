@@ -7,15 +7,19 @@ import NavDropdown from "../../../components/nav-dropdown";
 import { useAuth } from "../../../services/firebase/auth-context";
 import { useState } from "react";
 import MyTeamTasks from "./MyTeam-Tasks/page";
-import type { Member } from "../../../types/member";
+import type { Member, ProjectMember } from "../../../types/member";
 import { getMemberByEmail } from "../../../services/firestore/members";
 import type { Task } from "../../../types/task";
-import { listenToTaskByTeam } from "../../../services/firestore/tasks";
+import {
+  listenToTaskByTeam,
+  listenToTasks,
+} from "../../../services/firestore/tasks";
 import type { Project } from "../../../types/project";
 import type { User } from "firebase/auth";
 import { getUserById } from "../../../services/firestore/user";
 import { getProjectById } from "../../../services/firestore/projects";
 import NotifDropdown from "../../../components/notif-dropdown";
+import { listenToProjectMembers } from "../../../services/firestore/projectmember";
 
 export default function TeamTasks() {
   const [activeTab, setActiveTab] = useState<"myteam-tasks" | "other-reports">(
@@ -30,13 +34,19 @@ export default function TeamTasks() {
   const [project, setProject] = useState<Project | null>(null);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [members, setMembers] = useState<Member[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+
+  const [myProjectMemberData, setMyProjectMemberData] =
+    useState<ProjectMember | null>(null);
+
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
 
   const handleHomeClick = () => {
     navigate("/home");
   };
 
   useEffect(() => {
+    console.log("Subscribed to tasks for project:", projectId);
     // The User's Info as a member of this project
     getMemberByEmail(projectId || "", user?.email || "").then((member) => {
       setMe(member);
@@ -58,6 +68,64 @@ export default function TeamTasks() {
       };
     }
   }, [projectId, me?.teamName]);
+
+  useEffect(() => {
+    if (projectId) {
+      const unsubscribeToTasks = listenToTasks(projectId, setAllTasks);
+      const subscribeToProjectMembers = listenToProjectMembers(
+        projectId,
+        (membersData) => {
+          setProjectMembers(membersData);
+        }
+      );
+
+      return () => {
+        unsubscribeToTasks();
+        subscribeToProjectMembers();
+      };
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectMembers.length > 0 && user?.email) {
+      const myMemberData =
+        projectMembers.find(
+          (member) =>
+            member.emailAddress.toLowerCase() === user.email!.toLowerCase()
+        ) || null;
+      setMyProjectMemberData(myMemberData || null);
+    }
+  }, [projectMembers, user?.email]);
+
+  useEffect(() => {
+    const tasksWithAssignedManpower = allTasks.filter((task) => {
+      return task.assignedResource?.some(
+        (resource) => resource.group === "Manpower"
+      );
+    });
+
+    const membersWithSameTeam = projectMembers.filter(
+      (member) => member.teamId === myProjectMemberData?.teamId
+    );
+    const memberIdsWithSameTeam = membersWithSameTeam.map(
+      (member) => member.employeeId
+    );
+
+    const finalFilteredTasks = tasksWithAssignedManpower.filter((task) => {
+      return task.assignedResource?.some((resource) => {
+        console.log("Checking resource:", resource.id);
+        return memberIdsWithSameTeam.includes(resource.id);
+      });
+    });
+
+    console.log("Tasks with Assigned Manpower:", tasksWithAssignedManpower);
+    console.log("Members with Same Team:", memberIdsWithSameTeam);
+    console.log("Final Filtered Tasks:", finalFilteredTasks);
+
+    setTeamTasks(finalFilteredTasks);
+
+    //console.log("Member with Same Team:", memberWithSameTeam);
+  }, [allTasks, myProjectMemberData]);
 
   useEffect(() => {
     if (project) {

@@ -4,10 +4,15 @@ import leaderIcon from "../assets/images/leader.png";
 import memberIcon from "../assets/images/member.png";
 import { getUserById } from "../services/firestore/user";
 import { useEffect, useState } from "react";
-import type { Member } from "../types/member";
+import type { Member, ProjectMember } from "../types/member";
 import { getMemberByEmail } from "../services/firestore/members";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../services/firebase/auth-context";
+import type { Employee } from "../types/employee";
+import {
+  getMyMemberDataOnProject,
+  listenToProjectMembers,
+} from "../services/firestore/projectmember";
 
 interface ProjectCardProps {
   project: Project;
@@ -20,9 +25,17 @@ export default function ProjectCard({
   onCardClick,
   isAssociated,
 }: ProjectCardProps) {
+  // Employees data
+  const [employees, setEmployees] = useState<Employee[] | null>(null);
+  // Project specific members data
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[] | null>(
+    null
+  );
+
   const [member, setMember] = useState<Member | null>(null);
   const [ownerName, setOwnerName] = useState<string>("");
   const navigate = useNavigate();
+  const [myLevelOfAccess, setMyLevelOfAccess] = useState<string | null>(null);
   const { user } = useAuth();
   useEffect(() => {
     async function fetchOwnerName() {
@@ -34,16 +47,37 @@ export default function ProjectCard({
 
     async function fetchMember() {
       if (project.members && project.members.length > 0) {
-        if (!user?.email) return;
+        if (!project.id || !user?.email) return;
         const memberData = await getMemberByEmail(project.id, user?.email);
         setMember(memberData);
       }
     }
+
     if (isAssociated) {
       fetchOwnerName();
       fetchMember();
     }
   }, [project.ownerID]);
+
+  useEffect(() => {
+    const fetchLevelOfAccess = async () => {
+      if (!isAssociated) return;
+      if (!project || !user || !project.id) return;
+
+      if (!user?.uid || !project.id) return;
+      const myData = await getMyMemberDataOnProject(
+        project.id,
+        user?.email || ""
+      );
+      setMyLevelOfAccess(myData?.level || null);
+    };
+
+    fetchLevelOfAccess();
+  }, [project, isAssociated, user]);
+
+  useEffect(() => {
+    console.log("My level of access:", myLevelOfAccess);
+  }, [myLevelOfAccess]);
 
   return (
     <div className="h-full">
@@ -53,9 +87,9 @@ export default function ProjectCard({
         onClick={() => {
           if (!isAssociated) onCardClick();
           else {
-            if (member?.level === "Leader") {
+            if (myLevelOfAccess === "Leader") {
               navigate(`/teamtasks/${project.id}`);
-            } else if (member?.level === "Member") {
+            } else if (myLevelOfAccess === "Member") {
               navigate(`/mytasks/${project.id}`);
             }
           }
@@ -79,10 +113,10 @@ export default function ProjectCard({
                 Owner: {ownerName}
               </div>
               <div className="ml-auto text-sm *:w-5">
-                {member?.level === "Leader" && (
+                {myLevelOfAccess === "Leader" && (
                   <img src={leaderIcon} alt="Leader" />
                 )}
-                {member?.level === "Member" && (
+                {myLevelOfAccess === "Member" && (
                   <img src={memberIcon} alt="Member" />
                 )}
               </div>

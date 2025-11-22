@@ -83,6 +83,7 @@ export function listenToTasks(
   callback: (tasks: Task[]) => void,
   loadedCallback?: (loaded: boolean) => void
 ) {
+  console.log("Listening to tasks for project:", projectId);
   const tasksCol = collection(db, "projects", projectId, "tasks");
   return onSnapshot(tasksCol, (snapshot) => {
     const tasks = snapshot.docs.map((doc) => {
