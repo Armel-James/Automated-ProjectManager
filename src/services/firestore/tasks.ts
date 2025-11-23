@@ -92,6 +92,10 @@ export function listenToTasks(
         docId: Number(doc.id),
         ...docData,
         startDate: docData.startDate?.toDate?.() || new Date(),
+        baselineStartDate: docData.baselineEndDate
+          ? docData.startDate?.toDate?.()
+          : null,
+        baselineEndDate: docData.baselineEndDate?.toDate?.() || null,
       } as Task;
     });
     tasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -331,6 +335,11 @@ export async function updateTask(
       console.log("Updating total cost:", value);
       await updateTotalCost(projectId, taskId, value);
       break;
+
+    case CoreTaskFields.baselineEndDate:
+      await updateTaskBaselineEndDate(projectId, taskId, value);
+      break;
+
     default:
       console.log("Unknown field received:", field);
   }
@@ -387,6 +396,10 @@ export async function updateTaskProgress(
     `The progress of task ID "${task.name}" has been updated to ${newProgress}%.`,
     NotificationType.TaskUpdated
   );
+
+  if (newProgress === 100) {
+    updateTaskBaselineEndDate(projectId, taskId, new Date());
+  }
 }
 
 export async function updateTaskDependency(
@@ -430,6 +443,17 @@ export async function updateTaskOrder(
   const docRef = doc(db, "projects", projectId, "tasks", String(taskId));
   await updateDoc(docRef, {
     order: order,
+  });
+}
+
+export async function updateTaskBaselineEndDate(
+  projectId: string,
+  taskId: string,
+  baselineEndDate: Date
+) {
+  const docRef = doc(db, "projects", projectId, "tasks", String(taskId));
+  await updateDoc(docRef, {
+    baselineEndDate: baselineEndDate,
   });
 }
 

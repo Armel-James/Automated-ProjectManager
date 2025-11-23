@@ -17,6 +17,8 @@ export interface Task {
   totalCost: number;
   order: number;
   docId: number;
+  baselineEndDate?: Date | Timestamp;
+  baselineStartDate?: Date | Timestamp;
 }
 
 export const CoreTaskFields: any = {
@@ -31,6 +33,8 @@ export const CoreTaskFields: any = {
   parentId: "parentId",
   assignedResource: "assignedResource",
   totalCost: "totalCost",
+  baselineStartDate: "baselineStartDate",
+  baselineEndDate: "baselineEndDate",
 } as const;
 
 export type CoreTaskFieldsType =

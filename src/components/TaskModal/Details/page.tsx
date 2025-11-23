@@ -24,7 +24,11 @@ export default function TaskDetailsPage({
   const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
-    const unsubscribeTask = listenToTask(projectId, task.docId, setCurrentTask);
+    const unsubscribeTask = listenToTask(
+      projectId,
+      String(task.docId),
+      setCurrentTask
+    );
     const unsubscribeMembers = listenToProjectMembers(projectId, setMembers);
 
     return () => {
@@ -72,6 +76,11 @@ export default function TaskDetailsPage({
             value={progress}
             onChange={(e) => setProgress(Number(e.target.value))}
             className="w-64 accent-[#0f6cbd] flex-shrink-0"
+            disabled={
+              (currentTask?.startDate instanceof Date &&
+                currentTask.startDate > new Date()) ||
+              currentTask?.progress === 100
+            }
           />
           <span className="text-sm font-semibold text-[#0f6cbd] w-12 text-right block">
             {progress}%
@@ -80,8 +89,12 @@ export default function TaskDetailsPage({
             className="ml-4 px-4 py-2 bg-white text-[#0f6cbd] font-semibold rounded-lg border border-[#0f6cbd] shadow hover:bg-[#e6f0fa] transition flex-shrink-0"
             onClick={() => {
               setProgress(progress);
-              updateTaskProgress(projectId, task.docId, progress);
+              updateTaskProgress(projectId, String(task.docId), progress);
             }}
+            disabled={
+              currentTask?.startDate instanceof Date &&
+              currentTask.startDate > new Date()
+            }
           >
             Update
           </button>
@@ -89,15 +102,49 @@ export default function TaskDetailsPage({
             className="ml-2 px-4 py-2 bg-[#0f6cbd] text-white font-semibold rounded-lg shadow hover:bg-[#155fa0] transition flex-shrink-0"
             onClick={() => {
               setProgress(100);
-              updateTaskProgress(projectId, task.docId, 100);
+              updateTaskProgress(projectId, String(task.docId), 100);
               console.log("Task approved:", task.docId);
             }}
+            disabled={
+              currentTask?.startDate instanceof Date &&
+              currentTask.startDate > new Date()
+            }
           >
             Approve
           </button>
         </div>
       </div>
       <div className="space-y-2">
+        {currentTask?.startDate instanceof Date &&
+        currentTask.startDate > new Date() ? (
+          <div className="flex items-center gap-2 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6 text-yellow-600"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11.25 9.75h1.5v3h-1.5v-3zm0 6h1.5v1.5h-1.5V15z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 2.25c5.385 0 9.75 4.365 9.75 9.75s-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12 6.615 2.25 12 2.25z"
+              />
+            </svg>
+            <span className="font-medium text-yellow-800">
+              This task hasn't started yet.
+            </span>
+          </div>
+        ) : (
+          <div></div>
+        )}
+
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-700">Start date:</span>
           <span className="text-gray-500">

@@ -197,6 +197,8 @@ function TasksView({ projectId }: TasksViewProps) {
     order: "order",
     resourceInfo: "assignedResource",
     totalCost: "totalCost",
+    baselineStartDate: "baselineStartDate",
+    baselineEndDate: "baselineEndDate",
   };
 
   const resourceFields = {
@@ -279,6 +281,8 @@ function TasksView({ projectId }: TasksViewProps) {
           height="800px"
           editDialogFields={editDialogFields}
           width="100%"
+          renderBaseline={true}
+          baselineColor="blue"
           gridLines={"Horizontal"}
           allowSelection={true}
           editSettings={editOptions} // Apply the edit settings with the custom template
@@ -518,6 +522,8 @@ function TasksView({ projectId }: TasksViewProps) {
                   name: "New Task",
                   progress: 0,
                   totalCost: 0,
+                  baselineStartDate: null,
+                  baselineEndDate: null,
                 } as Task);
               });
             } else if (args.requestType === "save") {
