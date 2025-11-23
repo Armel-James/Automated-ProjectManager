@@ -24,6 +24,7 @@ import { NotificationType } from "../../types/notification";
 import { getUserById } from "./user";
 import type { OtherResource } from "../../types/other-resource";
 import type { GanttResource } from "../../types/resource";
+import type { setNumberFormat } from "@syncfusion/ej2-base";
 
 export async function createTask(projectId: string, newTask: Task) {
   try {
@@ -99,6 +100,8 @@ export function listenToTasks(
     callback(tasks as Task[]);
 
     if (loadedCallback) loadedCallback(true);
+    console.log(tasks as Task[]);
+    
   });
 }
 export function getCriticalPath(
@@ -185,6 +188,30 @@ export function getProjectEnd(
     }
   });
 }
+// UNDER CONSTRUCTION: Use to get specific units of resources to calculate the actual costs
+export async function getResourceCost(
+  projectId: string,
+  callback: (totalCost: number) => void
+) {
+  const tasksRef = collection(db, "projects", projectId, "tasks");
+  const snapshot = await getDocs(tasksRef);
+
+  const units = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      taskId: doc.id,
+      units: data.assignedResource?.map((r) => r.unit) || [],
+    };
+  });
+
+  console.log(units);
+  const unitsOnly = snapshot.docs
+    .flatMap((doc) => doc.data().assignedResource?.map((r) => r.unit) || [])
+    .flat();
+
+  console.log(unitsOnly);
+  callback(unitsOnly[0]);
+}
 
 export function listenToTaskByTeam(
   projectId: string,
@@ -206,7 +233,7 @@ export function listenToTaskByTeam(
       .filter((task) => {
         return task.assignedResource?.some((member) => {
           const memberNow = member;
-          return memberNow.teamName === teamName;
+          return memberNow.name === teamName;
         });
       });
     callback(tasks as Task[]);

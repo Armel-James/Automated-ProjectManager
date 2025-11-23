@@ -24,7 +24,7 @@ export default function TaskDetailsPage({
   const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
-    const unsubscribeTask = listenToTask(projectId, task.docId, setCurrentTask);
+    const unsubscribeTask = listenToTask(projectId, String(task.docId), setCurrentTask);
     const unsubscribeMembers = listenToProjectMembers(projectId, setMembers);
 
     return () => {
@@ -80,7 +80,7 @@ export default function TaskDetailsPage({
             className="ml-4 px-4 py-2 bg-white text-[#0f6cbd] font-semibold rounded-lg border border-[#0f6cbd] shadow hover:bg-[#e6f0fa] transition flex-shrink-0"
             onClick={() => {
               setProgress(progress);
-              updateTaskProgress(projectId, task.docId, progress);
+              updateTaskProgress(projectId, String(task.docId), progress);
             }}
           >
             Update
@@ -89,7 +89,7 @@ export default function TaskDetailsPage({
             className="ml-2 px-4 py-2 bg-[#0f6cbd] text-white font-semibold rounded-lg shadow hover:bg-[#155fa0] transition flex-shrink-0"
             onClick={() => {
               setProgress(100);
-              updateTaskProgress(projectId, task.docId, 100);
+              updateTaskProgress(projectId, String(task.docId), 100);
               console.log("Task approved:", task.docId);
             }}
           >

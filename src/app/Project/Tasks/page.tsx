@@ -193,6 +193,9 @@ function TasksView({ projectId }: TasksViewProps) {
     order: "order",
     resourceInfo: "assignedResource",
     totalCost: "totalCost",
+    baselineStartDate: 'BaselineStartDate',
+    baselineEndDate: 'BaselineEndDate',
+    baselineDuration: 'BaselineDuration',
   };
 
   const resourceFields = {
@@ -209,6 +212,7 @@ function TasksView({ projectId }: TasksViewProps) {
     "Search",
     "Indent",
     "Outdent",
+    "renderBaseline",
     { text: "Submissions", id: "SubmissionsButton" },
   ];
 
@@ -242,6 +246,8 @@ function TasksView({ projectId }: TasksViewProps) {
     <div className="w-full h-[700px] max-h-[500px] min-w-[500px] max-w-[1820px] border-gray-300">
       {projectId && formattedResources.length > 0 && (
         <GanttComponent
+          baselineColor="red"
+          renderBaseline={true}
           ref={ganttRef}
           key={projectId}
           resources={formattedResources}
@@ -476,7 +482,7 @@ function TasksView({ projectId }: TasksViewProps) {
                     parentId: t.taskData?.parentId ?? null,
                     notes: t.taskData?.notes ?? "",
                     docId: t.taskData?.docId ?? "",
-                    totalCost: Number(t.taskData?.totalCost) ?? 0,
+                    totalCost: Number(t.taskData?.totalCost) || 0,
                   })) || [];
                 if (!allTasks) return;
 
