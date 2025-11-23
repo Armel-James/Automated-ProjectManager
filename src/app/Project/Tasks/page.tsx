@@ -116,7 +116,7 @@ function TasksView({ projectId }: TasksViewProps) {
       }));
 
     setFormattedResources([...formattedMembers, ...formattedOtherResources]);
-  }, [membersCollection, otherResourcesCollection, globalEmployees]);
+  }, [membersCollection, otherResourcesCollection, globalEmployees, projectId]);
 
   function handleToolbarClick(args: any) {
     if (!ganttRef.current) {
@@ -128,7 +128,10 @@ function TasksView({ projectId }: TasksViewProps) {
       return;
     }
 
-    if (args.item.id === "SubmissionsButton") setIsUploadModalOpen(true);
+    if (args.item.id === "SubmissionsButton") {
+      setIsUploadModalOpen(true);
+      console.log(formattedResources);
+    }
   }
 
   const rowSelected = (args: any) => {
@@ -149,6 +152,7 @@ function TasksView({ projectId }: TasksViewProps) {
 
   useEffect(() => {
     if (!projectId || !currentUser) return;
+
     const unsubscribeTasks = listenToTasks(projectId, setTasks);
     const unsubscribeToEmployees = listenToEmployees(
       currentUser.uid,
@@ -179,7 +183,7 @@ function TasksView({ projectId }: TasksViewProps) {
       unsubscribeToOtherResources();
       unsubscribeToEmployees();
     };
-  }, [projectId]);
+  }, [projectId, currentUser]);
 
   const taskFields: any = {
     id: "id",
@@ -222,6 +226,10 @@ function TasksView({ projectId }: TasksViewProps) {
     { type: "Notes" },
   ];
 
+  useEffect(() => {
+    console.log(tasks);
+  }, [tasks]);
+
   // const handleGetCriticalTasks = () => {
   //   if (ganttRef.current) {
   //     // Access the CriticalPath functionality
@@ -240,10 +248,11 @@ function TasksView({ projectId }: TasksViewProps) {
     // handleGetCriticalTasks(),
 
     <div className="w-full h-[700px] max-h-[500px] min-w-[500px] max-w-[1820px] border-gray-300">
-      {projectId && formattedResources.length > 0 && (
+      {projectId && formattedResources.length >= 0 && (
         <GanttComponent
           ref={ganttRef}
-          key={projectId}
+          key={tasks.length}
+          enablePersistence={true}
           resources={formattedResources}
           resourceFields={resourceFields}
           rowSelected={rowSelected}
@@ -508,7 +517,8 @@ function TasksView({ projectId }: TasksViewProps) {
                   order: newTaskIndex,
                   name: "New Task",
                   progress: 0,
-                });
+                  totalCost: 0,
+                } as Task);
               });
             } else if (args.requestType === "save") {
               if (!currentTaskToEdit?.current) {
