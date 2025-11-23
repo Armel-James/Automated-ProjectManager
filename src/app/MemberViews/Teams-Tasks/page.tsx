@@ -118,9 +118,9 @@ export default function TeamTasks() {
       });
     });
 
-    console.log("Tasks with Assigned Manpower:", tasksWithAssignedManpower);
-    console.log("Members with Same Team:", memberIdsWithSameTeam);
-    console.log("Final Filtered Tasks:", finalFilteredTasks);
+    // console.log("Tasks with Assigned Manpower:", tasksWithAssignedManpower);
+    // console.log("Members with Same Team:", memberIdsWithSameTeam);
+    // console.log("Final Filtered Tasks:", finalFilteredTasks);
 
     setTeamTasks(finalFilteredTasks);
 

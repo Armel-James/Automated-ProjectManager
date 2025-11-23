@@ -18,12 +18,12 @@ export const TaskbarTemplate = (props: any) => {
 
   useEffect(() => {
     // You can add any side effects or logging here if needed
-    console.log(
-      "Rendering TaskbarTemplate with progress:",
-      progress,
-      "and resources:",
-      props
-    );
+    // console.log(
+    //   "Rendering TaskbarTemplate with progress:",
+    //   progress,
+    //   "and resources:",
+    //   props
+    // );
   }, [progress, props.Resources]);
 
   return (

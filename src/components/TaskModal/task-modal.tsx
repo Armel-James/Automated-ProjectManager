@@ -81,13 +81,19 @@ export default function TaskModal({
           {activeTab === "comments" && (
             <div>
               {/* Comments content here */}
-              <TaskCommentsPage projectId={projectId} taskId={task.docId} />
+              <TaskCommentsPage
+                projectId={projectId}
+                taskId={String(task.docId)}
+              />
             </div>
           )}
           {activeTab === "uploads" && (
             <div>
               {/* Uploads content here */}
-              <TaskUploadsPage projectId={projectId} taskId={task.docId} />
+              <TaskUploadsPage
+                projectId={projectId}
+                taskId={String(task.docId)}
+              />
             </div>
           )}
         </div>
